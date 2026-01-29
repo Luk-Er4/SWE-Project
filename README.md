@@ -1,2 +1,2 @@
 # SWE-Project
-Food nutrition and allergy System
+Food Nutrition and allergy Project
