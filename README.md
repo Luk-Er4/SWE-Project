@@ -22,9 +22,11 @@ The goal of this project is to help general users better understand their overal
 - **Week 14:** Final presentation 
 
 ## Tech Stack
-- **Frontend:** React  
-- **Backend:** SQL database for storing user information and results  
-- **Machine Learning:** Linear Regression or XGBoost Regressor (TBD)  
+- **Frontend:** HTML, CSS, React  
+- **Backend:** Python, MySQL, Pytest, Fast API
+- **Machine Learning:** XGBoost, Scikit learn, Python, Pandas, Kube Flow
+- **DevOps:** Docker, Gitlab, Kubernets, Terraform
+- **Cloud Ops:** AWS, VPC, Amazon RDS, Amazon S3, Amazon EC2, Amazon API Gateway
 
 ## Dataset
 The dataset used to train and evaluate the machine learning model was sourced from Kaggle and is provided in CSV format.
@@ -41,6 +43,16 @@ Setup and installation instructions will be added as development progresses.
 
 ## Deployment
 The application is planned to be deployed in the cloud once core functionality is complete.
+
+## Contributors
+
+This is a **team project** developed by a group of **five members**:
+
+- [Tatum Beaugh](https://github.com/tatumbeaugh)  
+- [Amiran Fields](https://github.com/a-mir-an)  
+- [Kanharatana Huot](https://github.com/alphieeeee)
+- [Euijin Jung](https://github.com/Luk-Er4)
+- [Peyton Bubert](https://github.com/pbubert)
 
 
 ## Disclaimer
