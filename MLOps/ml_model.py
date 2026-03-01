@@ -4,7 +4,7 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
 import numpy as np
-from xgboost import XGBRegressor
+import xgboost as xgb
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 import math
 
@@ -179,25 +179,60 @@ def train_model(data):
 
   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
-  model = XGBRegressor()
+  model = xgb.XGBRegressor()
   model.fit(X_train, y_train)
   print("Model successfully trained")
-  return model
+  return model, X.columns
 
 
 def main(): 
   #reads the data
   data = read_data()
   #trains the model
-  model = train_model(data)
+  model, feature_names = train_model(data)
 
   #Recieves the user input
   user_input = []
   user_input = get_input()
+  user_df = pd.DataFrame([user_input], columns=feature_names)
 
   #predict the two scores for the user input
-  prediction = model.predict([user_input])
+  prediction = model.predict(user_df)
   print(prediction)
+
+  #find the most important features to the score
+  matrix = xgb.DMatrix(user_df)
+
+  #gets the importance of the features
+  importance = model.get_booster().predict(matrix, pred_contribs=True)
+
+  #removes any bias and divides the two importance by the two outputs
+  health_importance = importance[0][0][:-1]
+
+  # For LIFESTYLE_SCORE
+  lifestyle_importance = importance[0][1][:-1]
+
+  #turn the two into dataframes
+  health_importance_df = pd.DataFrame({
+    "Feature": feature_names,
+    "Contribution": health_importance
+  })
+
+  lifestyle_importance_df = pd.DataFrame({
+    "Feature": feature_names,
+    "Contribution": lifestyle_importance
+  })
+
+  #sort the two dataframes by their absolute value, no confusion between negative values
+  health_importance_df["AbsContribution"] = health_importance_df["Contribution"].abs()
+  lifestyle_importance_df["AbsContribution"] = lifestyle_importance_df["Contribution"].abs()
+
+  #sort the values in ascending order
+  health_importance_df = health_importance_df.sort_values(by="AbsContribution", ascending=False)
+  lifestyle_importance_df = lifestyle_importance_df.sort_values(by="AbsContribution", ascending=False)
+
+  print(health_importance_df)
+  print(lifestyle_importance_df)
 
 
 if __name__ == "__main__":
