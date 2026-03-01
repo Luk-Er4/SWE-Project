@@ -33,7 +33,7 @@ def welcomePage():
         "message": "welcome"
     }
 
-# http://localhost:8000/api/login/?id=put_id_here&pw=put_pw_here
+# http://localhost:8000/api/login/?id=cherydought8&pw=\Er8oX6u9t
 @app.get("/api/login/")
 def login_result(id: str, pw: str):
     try:
@@ -78,3 +78,4 @@ def login_result(id: str, pw: str):
 
         # Return value
         return {"message": "Login Failed. Try Again!"}
+        
