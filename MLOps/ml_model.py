@@ -101,7 +101,7 @@ def calculate_bmi(weight, height):
   return bmi
 
 def read_data():
-  df = pd.read_csv(r"C:\Dev folder\MLOps\data\RawData.csv")
+  df = pd.read_csv(r".\MLOps\data\RawData.csv")
   return df
 
 def get_input():
@@ -184,22 +184,7 @@ def train_model(data):
   print("Model successfully trained")
   return model, X.columns
 
-
-def main(): 
-  #reads the data
-  data = read_data()
-  #trains the model
-  model, feature_names = train_model(data)
-
-  #Recieves the user input
-  user_input = []
-  user_input = get_input()
-  user_df = pd.DataFrame([user_input], columns=feature_names)
-
-  #predict the two scores for the user input
-  prediction = model.predict(user_df)
-  print(prediction)
-
+def user_feature_importance(user_df):
   #find the most important features to the score
   matrix = xgb.DMatrix(user_df)
 
@@ -231,8 +216,29 @@ def main():
   health_importance_df = health_importance_df.sort_values(by="AbsContribution", ascending=False)
   lifestyle_importance_df = lifestyle_importance_df.sort_values(by="AbsContribution", ascending=False)
 
-  print(health_importance_df)
-  print(lifestyle_importance_df)
+  print("Health Risk feature importance")
+  print(health_importance_df[["Feature", "AbsContribution"]])
+  print("Lifestyle Feature Importance")
+  print(lifestyle_importance_df[["Feature", "AbsContribution"]])
+
+def main(): 
+  #reads the data
+  data = read_data()
+  #trains the model
+  model, feature_names = train_model(data)
+
+  #Recieves the user input
+  user_input = []
+  user_input = get_input()
+  user_df = pd.DataFrame([user_input], columns=feature_names)
+
+  #predict the two scores for the user input
+  prediction = model.predict(user_df)
+  print(prediction)
+
+  user_feature_importance(user_df)
+
+  
 
 
 if __name__ == "__main__":
