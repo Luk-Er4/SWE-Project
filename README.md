@@ -50,7 +50,7 @@ This is a **team project** developed by a group of **five members**:
 
 - [Tatum Beaugh](https://github.com/tatumbeaugh)  
 - [Amiran Fields](https://github.com/a-mir-an)  
-- [Kanharatana Huot](https://github.com/alphieeeee)
+- [Kanharatana Huot](https://github.com/Alfieeeeeeeeeeee)
 - [Euijin Jung](https://github.com/Luk-Er4)
 - [Peyton Bubert](https://github.com/pbubert)
 
