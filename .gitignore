@@ -1,2 +1,3 @@
-Back_End/__pycache__
-Back_End/__pycache__/*
+*/__pycache__
+*/__pycache__/*
+.vscode/
