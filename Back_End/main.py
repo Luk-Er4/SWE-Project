@@ -4,7 +4,8 @@ import datetime
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from Back_End import login_requirements, mysqlconnector
+import login_requirements
+import mysqlconnector
 
 while True:
     connection, db = mysqlconnector.connectSQL()

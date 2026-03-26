@@ -6,7 +6,7 @@ def connectSQL():
 
     try:
         mydb = mysql.connector.connect(
-            host="localhost",
+            host="host.docker.internal",
             user="root",
             password="1234",
             database="healthsys"
@@ -17,4 +17,4 @@ def connectSQL():
             return True, mydb
 
     except Error as err:
-        return f"Error connecting to MySQL: {err}"
+        return False, None
