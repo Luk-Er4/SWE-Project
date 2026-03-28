@@ -1,5 +1,4 @@
 import pandas as pd
-import seaborn as sns
 from sklearn.preprocessing import LabelEncoder
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
@@ -10,7 +9,6 @@ import math
 
 #place the CSV into mySQL databases, and retrieve the
 #data and save as a JSON format
-
 
 #Encoding FUnctions
 def country_encoder(data):
@@ -45,11 +43,8 @@ def country_encoder_user(item):
   
   for key in countries.keys():
     if item in countries[key]:
-      item = int(key)
-      break
-    else:
-      item = 9 #return value for a country that the encoder does not recognize
-  return item
+      return int(key)
+  return 6
 
 
 def profession_encoder(data):
@@ -87,18 +82,45 @@ def profession_encoder_user(item):
     }
   for key in professions.keys():
     if item in professions[key]:
-      item = int(key)
-      break
-    else:
-      item = 9
-  return item
+      return int(key)
+  return 9
 
+def encode_gender(gender):
+  if gender == 'Female':
+    gender = 1
+  else:
+    gender = 0
+  return gender
+
+def encode_smoking_status(smoking):
+  if smoking == 'Never':
+    smoking = 0
+  elif smoking == 'Low':
+    smoking = 1
+  elif smoking == 'Medium':
+    smoking = 2
+  else:
+    smoking = 3
+  return smoking
 
 def calculate_bmi(weight, height):
   height = int(height)
   weight = int(weight)
-  bmi = (703 * weight) / (height ** height)
+  bmi = (703 * weight) / (height ** 2)
   return bmi
+
+def encoder_education(education):
+  if education == 'Highschool':
+    education = 0
+  elif education == 'some college':
+    education = 1
+  elif education == 'Bachlores':
+    education = 2
+  elif education == 'Masters':
+    education = 3
+  else:
+    education = 4
+  return education
 
 def read_data():
   df = pd.read_csv(r".\MLOps\data\RawData.csv")
@@ -107,11 +129,9 @@ def read_data():
 def get_input():
   encoder = LabelEncoder()
   age = input("Please enter your age?")
+
   gender = input("What is your gender?")
-  if gender == 'Female':
-    gender = 1
-  else:
-    gender = 0
+  gender = encode_gender(gender)
   smoking = input("Have you ever smoked? If yes, do you smoke " \
                   "high, medium, or low frequency? Otherwise, please say Never")
   #makes sure the smoking status input is true
@@ -121,42 +141,31 @@ def get_input():
       smoking = input("invalid input. Please enter Never, frequently, sometimes, or not often")
     else:
       break
-  if smoking == 'Never':
-    smoking = 0
-  elif smoking == 'Low':
-    smoking = 1
-  elif smoking == 'Medium':
-    smoking = 2
-  else:
-    smoking = 3
+  smoking = encode_smoking_status(smoking)
+  
   activity = input("about how many hours a day are you physically active?")
+
   sleep = input("about how many hours of sleep do you get each night?")
   height = input("approximately, how tall are you, in inches?")
+
   weight = input("approximately, how much do you weigh, in pounds?")
 
   bmi = calculate_bmi(weight, height)
   profession = input("what is your current profession?")
   profession = profession_encoder_user(profession)
   level = ["Highschool", "some college", "Bachlores", "Masters", "PHD"]
-  edcuation = input("What is your highest achievement in edcuation? " \
+  education = input("What is your highest achievement in edcuation? " \
                     "Highschool, some college, Bachlores, Masters, or PHD?")
   while True:
-    if edcuation not in level:
-      edcuation = input("Invalid Input, please enter one of the following for edcuation:" \
+    if education not in level:
+      education = input("Invalid Input, please enter one of the following for edcuation:" \
                         "Highschool, some college, Bachlores, Masters, or PHD")
     else:
       break
-  if edcuation == 'Highschool':
-    edcuation = 0
-  elif edcuation == 'some college':
-    edcuation = 1
-  elif edcuation == 'Bachlores':
-    edcuation = 2
-  elif edcuation == 'Masters':
-    edcuation = 3
-  else:
-    edcuation = 4
+  education = encoder_education(education)
+
   diet = input("approximately, how many calories do you consume each day?")
+
   diseases = input("Are you currently afflicted with any other diseases? If yes, how many? Otherwise please enter 0")
   country = input("Please enter your country of residence")
   country = country_encoder_user(country)
