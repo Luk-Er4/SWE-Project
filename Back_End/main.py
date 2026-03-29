@@ -3,17 +3,28 @@ import datetime
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 import login_requirements
 import mysqlconnector
 
-if True:
-    connection, db = mysqlconnector.connectSQL()
-    if connection == True:  
-        cursor = db.cursor()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ok, db = mysqlconnector.connectSQL()
+
+    if ok:
+        print("DB startup check success")
+        app.state.db = db
     else:
-        print("Not responsding...")
-        print("Failed!")
+        print("DB startup check failed")
+
+    yield
+
+    if hasattr(app.state, "db"):
+        app.state.db.close()
+        print("DB connection closed")
+
+app = FastAPI(lifespan=lifespan)
 
 # Create App
 app = FastAPI()
@@ -26,6 +37,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def root():
+    return {"message": "ok"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 # http://localhost:8000/api/welcome/
 @app.get("/api/welcome/")
