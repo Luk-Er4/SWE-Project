@@ -3,3 +3,6 @@ sklearn
 numpy
 xgboost
 math
+os
+contextlib
+python-multipart

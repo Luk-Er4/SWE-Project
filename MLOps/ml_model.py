@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 from sklearn.preprocessing import LabelEncoder
 from sklearn import datasets
 from sklearn.model_selection import train_test_split
@@ -123,8 +124,14 @@ def encoder_education(education):
   return education
 
 def read_data():
-  df = pd.read_csv(r".\MLOps\data\RawData.csv")
-  return df
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    data_path = os.path.join(BASE_DIR, "Data", "RawData.csv")
+    print("Loading data from:", data_path)
+    if not os.path.exists(data_path):
+        raise FileNotFoundError(f"Data file not found at {data_path}")
+    return pd.read_csv(data_path)
+  #df = pd.read_csv(r".\MLOps\Data\RawData.csv")
+
 
 def get_input():
   encoder = LabelEncoder()
@@ -172,7 +179,10 @@ def get_input():
 
   return [int(age), int(gender), int(smoking), int(activity), int(sleep), int(bmi), int(profession), int(edcuation), int(diet), int(diseases), int(country)]
 
-def train_model(data):
+def train_model():
+  print("Loading Data")
+  data = read_data()
+  print("Encoding Data")
   encoder = LabelEncoder()
   X = data.drop(['Unnamed: 0','STRESS_LEVEL', 'HEALTH_RISK_SCORE', 'LIFESTYLE_SCORE'], axis=1)
   X['SEX'] = encoder.fit_transform(X['SEX'])
@@ -188,12 +198,14 @@ def train_model(data):
 
   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
+  print("Training Model")
   model = xgb.XGBRegressor()
   model.fit(X_train, y_train)
   print("Model successfully trained")
   return model, X.columns
 
-def user_feature_importance(user_df):
+
+def user_feature_importance(user_df, model, feature_names):
   #find the most important features to the score
   matrix = xgb.DMatrix(user_df)
 
@@ -230,23 +242,23 @@ def user_feature_importance(user_df):
   print("Lifestyle Feature Importance")
   print(lifestyle_importance_df[["Feature", "AbsContribution"]])
 
-def main(): 
-  #reads the data
-  data = read_data()
-  #trains the model
-  model, feature_names = train_model(data)
+  return health_importance_df, lifestyle_importance_df
 
-  #Recieves the user input
-  user_input = []
-  user_input = get_input()
+def user_predict(user_input, model, feature_names):
   user_df = pd.DataFrame([user_input], columns=feature_names)
 
   #predict the two scores for the user input
   prediction = model.predict(user_df)
-  print(prediction)
+  return prediction, user_df
 
-  user_feature_importance(user_df)
 
+
+def main():
+  #Recieves the user input
+  user_input = []
+  user_input = get_input()
+  prediction, user_df =user_predict(user_input)
+  health_important_df, lifestyle_importance_df = user_feature_importance(model, user_df, feature_names)
   
 
 
