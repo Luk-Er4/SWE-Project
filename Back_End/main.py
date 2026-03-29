@@ -7,13 +7,13 @@ from fastapi.middleware.cors import CORSMiddleware
 import login_requirements
 import mysqlconnector
 
-while True:
+if True:
     connection, db = mysqlconnector.connectSQL()
     if connection == True:  
         cursor = db.cursor()
-        break
     else:
         print("Not responsding...")
+        print("Failed!")
 
 # Create App
 app = FastAPI()
