@@ -1,7 +1,7 @@
 import uuid
 import datetime
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
@@ -25,9 +25,6 @@ async def lifespan(app: FastAPI):
         print("DB connection closed")
 
 app = FastAPI(lifespan=lifespan)
-
-# Create App
-app = FastAPI()
 
 # Allows front end connection to this API
 app.add_middleware(
@@ -55,8 +52,14 @@ def welcomePage():
 
 # http://localhost:8000/api/login/?id=cherydought8&pw=\Er8oX6u9t
 @app.post("/api/login/")
-def login_result(id: str, pw: str):
+def login_result(request: Request, id: str, pw: str):
     try:
+        db = request.app.state.db
+        cursor = db.cursor()
+
+        if db == None or cursor == None:
+            return {"messege": "Unable to connect to DB"}
+
         # Get u_uuid and first name from user_priv_info DB if id and pw matches
         cursor.execute("SELECT u_uuid, first_name FROM user_priv_info WHERE user_id = %s AND user_pw = %s", (id, pw))
         rows = cursor.fetchone()
@@ -101,13 +104,19 @@ def login_result(id: str, pw: str):
 
 # http://localhost:8000/api/new_user/?first=ABCDE&last=FGHIJ&id=emahogdf452&pw=p@as$vv0rD
 @app.post("/api/new_user/")
-def login_result(first: str, last:str, id: str, pw: str):
+def login_result(request: Request, first: str, last:str, id: str, pw: str):
     '''
     1. Check if there is at least one of inputs has invalid inputs causing SQL injection
     2. Check id and password requirements
     3. Then add user info to table
     '''
     try:
+        db = request.app.state.db
+        cursor = db.cursor()
+
+        if db == None or cursor == None:
+            return {"messege": "Unable to connect to DB"}
+
         ## Step 1 ##
         # Retrieve all column names in table user_priv_info
         not_allowed_names = login_requirements.checkcolnames(cursor)
