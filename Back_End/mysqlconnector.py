@@ -14,6 +14,10 @@ def connectSQL():
     DB_PASSWORD = os.getenv("AWS_DB_PW")
     DB_DATABASE = os.getenv("AWS_DB_NAME")
 
+    print("HOST_NAME:", HOST_NAME)
+    print("USER_NAME:", USER_NAME)
+    print("DB_DATABASE:", DB_DATABASE)
+
     try:
         mydb = mysql.connector.connect(
             host=HOST_NAME,
@@ -25,6 +29,9 @@ def connectSQL():
         if mydb.is_connected():
             print("Connection to MySQL successful!")
             return True, mydb
+
+        print("MySQL connect returned object, but not connected.")
+        return False, None
 
     except Error as err:
         return False, None

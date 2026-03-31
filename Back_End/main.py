@@ -1,11 +1,13 @@
 import uuid
 import datetime
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 import login_requirements
+import init_db
+
 import mysqlconnector
 
 @asynccontextmanager
@@ -37,11 +39,19 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"message": "ok"}
+    return {"message": "ook"}
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ook"}
+
+'''
+@app.get("/api/data_startup/")
+def date_startup():
+    ok, db = mysqlconnector.connectSQL()
+
+    init_db.init_db(db)
+'''
 
 # http://localhost:8000/api/welcome/
 @app.get("/api/welcome/")
@@ -54,11 +64,12 @@ def welcomePage():
 @app.post("/api/login/")
 def login_result(request: Request, id: str, pw: str):
     try:
-        db = request.app.state.db
-        cursor = db.cursor()
+        ok, db = mysqlconnector.connectSQL()
 
-        if db == None or cursor == None:
-            return {"messege": "Unable to connect to DB"}
+        if not ok or db is None:
+            raise HTTPException(status_code=500, detail="Database connection failed")
+
+        cursor = db.cursor()
 
         # Get u_uuid and first name from user_priv_info DB if id and pw matches
         cursor.execute("SELECT u_uuid, first_name FROM user_priv_info WHERE user_id = %s AND user_pw = %s", (id, pw))
@@ -101,6 +112,12 @@ def login_result(request: Request, id: str, pw: str):
 
         # Return value
         return {"message": "Login Failed. Try Again!"}
+    
+    finally:
+        if cursor:
+            cursor.close()
+
+        db.close()
 
 # http://localhost:8000/api/new_user/?first=ABCDE&last=FGHIJ&id=emahogdf452&pw=p@as$vv0rD
 @app.post("/api/new_user/")
@@ -111,11 +128,12 @@ def login_result(request: Request, first: str, last:str, id: str, pw: str):
     3. Then add user info to table
     '''
     try:
-        db = request.app.state.db
-        cursor = db.cursor()
+        ok, db = mysqlconnector.connectSQL()
 
-        if db == None or cursor == None:
-            return {"messege": "Unable to connect to DB"}
+        if not ok or db is None:
+            raise HTTPException(status_code=500, detail="Database connection failed")
+
+        cursor = db.cursor()
 
         ## Step 1 ##
         # Retrieve all column names in table user_priv_info
@@ -155,3 +173,9 @@ def login_result(request: Request, first: str, last:str, id: str, pw: str):
     except Exception as e:
         # Return value
         return {"message": f"{e}"}
+    
+    finally:
+        if cursor:
+            cursor.close()
+
+        db.close()
