@@ -2,3 +2,13 @@
 */__pycache__/*
 .vscode/
 .env
+
+# Personal Notes
+notes.txt
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
