@@ -100,7 +100,7 @@ resource "aws_lb_target_group" "health_fargate_api" {
     name        = "tg-health-sys"
     port        = 8000
     protocol    = "HTTP"
-    vpc_id      = "vpc-0acaf5f9f33ac191b"
+    vpc_id      = var.vpc_id
     target_type = "ip"
 
     health_check {
@@ -129,7 +129,7 @@ resource "aws_lb_listener" "http_health" {
                 enabled  = false 
             }
             target_group {
-                arn    = "arn:aws:elasticloadbalancing:us-east-1:077369590118:targetgroup/tg-health-sys/11933881c0746628" 
+                arn    = "arn:aws:elasticloadbalancing:us-east-1:${data.aws_caller_identity.current.account_id}:targetgroup/tg-health-sys/11933881c0746628" 
                 weight = 1 
             }
         }
@@ -140,7 +140,7 @@ resource "aws_lb_listener" "http_health" {
 resource "aws_security_group" "sg_alb_health" {
     name        = "security-group-alb-health-sys"
     description = "sg for alb"
-    vpc_id      = "vpc-0acaf5f9f33ac191b"
+    vpc_id      = var.vpc_id
 
     ingress { 
         cidr_blocks      = [
@@ -173,7 +173,7 @@ resource "aws_security_group" "sg_alb_health" {
 resource "aws_security_group" "sg_rds_health" {
     name        = "security-group-rds-health-sys"
     description = "sg for rds"
-    vpc_id      = "vpc-0acaf5f9f33ac191b"
+    vpc_id      = var.vpc_id
 
     ingress {
         cidr_blocks      = []
@@ -206,7 +206,7 @@ resource "aws_security_group" "sg_rds_health" {
 resource "aws_security_group" "sg_fargate_health" {
     name        = "security-group-fargate-health-sys"
     description = "sg for fargate"
-    vpc_id      = "vpc-0acaf5f9f33ac191b"
+    vpc_id      = var.vpc_id
 
     ingress {
         cidr_blocks      = []

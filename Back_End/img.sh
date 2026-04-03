@@ -22,3 +22,7 @@ echo "Tagged"
 docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$REPO_NAME:latest
 
 echo "Image Pushed to ECR"
+
+aws ecs update-service --cluster $CLUSTER_NAME --service $SERVICE_NAME --force-new-deployment
+
+echo "Image Pulled to Fargate"

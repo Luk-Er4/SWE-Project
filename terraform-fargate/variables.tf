@@ -13,3 +13,7 @@ variable "task_definition_name" {
 variable "aws_region" {
   default = "us-east-1"
 }
+
+variable "vpc_id" {
+ default = "vpc-0acaf5f9f33ac191b"
+}
