@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 import login_requirements
-import init_db
+#import init_db
 
 import mysqlconnector
 
