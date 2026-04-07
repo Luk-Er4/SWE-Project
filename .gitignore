@@ -5,6 +5,7 @@
 
 # Personal Notes
 notes.txt
+notes.*.txt
 
 # Terraform
 .terraform/

@@ -39,20 +39,20 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"message": "ook"}
+    return {"message": "ook1"}
 
 @app.get("/health")
 def health():
-    return {"status": "ook"}
-
+    return {"status": "ook1"}
 '''
 @app.get("/api/data_startup/")
 def date_startup():
     ok, db = mysqlconnector.connectSQL()
 
     init_db.init_db(db)
-'''
 
+    return {"message": "data init finished!"}
+'''
 # http://localhost:8000/api/welcome/
 @app.get("/api/welcome/")
 def welcomePage():
@@ -63,6 +63,9 @@ def welcomePage():
 # http://localhost:8000/api/login/?id=cherydought8&pw=\Er8oX6u9t
 @app.post("/api/login/")
 def login_result(request: Request, id: str, pw: str):
+    cursor = None
+    db = None
+    
     try:
         ok, db = mysqlconnector.connectSQL()
 
@@ -114,10 +117,11 @@ def login_result(request: Request, id: str, pw: str):
         return {"message": "Login Failed. Try Again!"}
     
     finally:
-        if cursor:
+        if cursor is not None:
             cursor.close()
 
-        db.close()
+        if db is not None:
+            db.close()
 
 # http://localhost:8000/api/new_user/?first=ABCDE&last=FGHIJ&id=emahogdf452&pw=p@as$vv0rD
 @app.post("/api/new_user/")
@@ -127,6 +131,9 @@ def login_result(request: Request, first: str, last:str, id: str, pw: str):
     2. Check id and password requirements
     3. Then add user info to table
     '''
+    cursor = None
+    db = None
+
     try:
         ok, db = mysqlconnector.connectSQL()
 
@@ -175,7 +182,8 @@ def login_result(request: Request, first: str, last:str, id: str, pw: str):
         return {"message": f"{e}"}
     
     finally:
-        if cursor:
+        if cursor is not None:
             cursor.close()
 
-        db.close()
+        if db is not None:
+            db.close()
