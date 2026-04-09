@@ -3,6 +3,7 @@ import datetime
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 from contextlib import asynccontextmanager
 
 import login_requirements
@@ -37,6 +38,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class LoginRequest(BaseModel):
+    id: str
+    pw: str
+
+class CreateAccountRequest(BaseModel):
+    id: str
+    pw: str
+    first: str
+    last: str
+
 @app.get("/")
 def root():
     return {"message": "ook1"}
@@ -60,9 +71,9 @@ def welcomePage():
         "message": "welcome"
     }
 
-# http://localhost:8000/api/login/?id=cherydought8&pw=\Er8oX6u9t
+# http://localhost:8000/api/login/  # Example: id=cherydought8 & pw=\Er8oX6u9t
 @app.post("/api/login/")
-def login_result(request: Request, id: str, pw: str):
+def login_result(login_data: LoginRequest):
     cursor = None
     db = None
     
@@ -74,8 +85,11 @@ def login_result(request: Request, id: str, pw: str):
 
         cursor = db.cursor()
 
+        req_id = login_data.id
+        req_pw = login_data.pw
+
         # Get u_uuid and first name from user_priv_info DB if id and pw matches
-        cursor.execute("SELECT u_uuid, first_name FROM user_priv_info WHERE user_id = %s AND user_pw = %s", (id, pw))
+        cursor.execute("SELECT u_uuid, first_name FROM user_priv_info WHERE user_id = %s AND user_pw = %s", (req_id, req_pw))
         rows = cursor.fetchone()
         user_uuid, user_first_name = rows[0], rows[1]
 
@@ -88,7 +102,7 @@ def login_result(request: Request, id: str, pw: str):
         # Post login attempt to login_attempts DB
         cursor.execute(
         "INSERT INTO login_attempts (la_uuid, datetime_sent, typed_id, typed_pw, status) " \
-            "VALUES (%s, %s, %s, %s, %s)", (login_attempt_uuid, login_time, id, pw, login_log))
+            "VALUES (%s, %s, %s, %s, %s)", (login_attempt_uuid, login_time, req_id, req_pw, login_log))
 
         # Save changes in login_attempts DB
         db.commit()
@@ -108,7 +122,7 @@ def login_result(request: Request, id: str, pw: str):
         # Post login attempt to login_attempts DB
         cursor.execute("" \
         "INSERT INTO login_attempts (la_uuid, datetime_sent, typed_id, typed_pw, status) " \
-            "VALUES (%s, %s, %s, %s, %s)", (login_attempt_uuid, login_time, id, None, login_log))
+            "VALUES (%s, %s, %s, %s, %s)", (login_attempt_uuid, login_time, req_id, None, login_log))
 
         # Save changes in login_attempts DB
         db.commit()
@@ -123,9 +137,9 @@ def login_result(request: Request, id: str, pw: str):
         if db is not None:
             db.close()
 
-# http://localhost:8000/api/new_user/?first=ABCDE&last=FGHIJ&id=emahogdf452&pw=p@as$vv0rD
+# http://localhost:8000/api/new_user/
 @app.post("/api/new_user/")
-def login_result(request: Request, first: str, last:str, id: str, pw: str):
+def create_account_result(create_data: CreateAccountRequest):
     '''
     1. Check if there is at least one of inputs has invalid inputs causing SQL injection
     2. Check id and password requirements
@@ -142,22 +156,27 @@ def login_result(request: Request, first: str, last:str, id: str, pw: str):
 
         cursor = db.cursor()
 
+        req_id = create_data.id
+        req_pw = create_data.pw
+        req_first = create_data.first
+        req_last = create_data.last
+
         ## Step 1 ##
         # Retrieve all column names in table user_priv_info
         not_allowed_names = login_requirements.checkcolnames(cursor)
 
         # Any inputs named like "first_name", then throw an error
-        for var in [first, last, id, pw]:
+        for var in [req_first, req_last, req_id, req_pw]:
             if var in not_allowed_names:
                 raise ValueError(f"Sorry, there are one or more invalid identifiers")
         
         ## Step 2 ##
-        id_issue = login_requirements.id_requirements(cursor, id)
+        id_issue = login_requirements.id_requirements(cursor, req_id)
 
         if id_issue is not None: 
             raise ValueError(id_issue)
 
-        pw_issue = login_requirements.pw_requirements(pw)
+        pw_issue = login_requirements.pw_requirements(req_pw)
 
         if pw_issue is not None:
             raise ValueError(pw_issue)
@@ -168,13 +187,13 @@ def login_result(request: Request, first: str, last:str, id: str, pw: str):
         # Take name, id, and password, then put it to user_priv_info DB
         cursor.execute("" \
         "INSERT INTO user_priv_info (u_uuid, first_name, last_name, user_id, user_pw, created_at) " \
-            "VALUES (%s, %s, %s, %s, %s, %s)", (user_priv_uuid, first, last, id, pw, created_date))
+            "VALUES (%s, %s, %s, %s, %s, %s)", (user_priv_uuid, req_first, req_last, req_id, req_pw, created_date))
         
         # Save changes in login_attempts DB
         db.commit()
 
         # Return value
-        return {"message": f"Welcome! {first} {last}!"}
+        return {"message": f"Welcome! {req_first} {req_last}!"}
 
     # If anything went wrong inside try, then this part will be run
     except Exception as e:
