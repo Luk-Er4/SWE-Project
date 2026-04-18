@@ -36,7 +36,7 @@ def form():
     </form>
     """
 
-@app.post("/predict", response_class=HTMLResponse)
+@app.post("/predict_prototype", response_class=HTMLResponse)
 def predict(
     age: int = Form(...),
     gender: str = Form(...),
@@ -95,4 +95,51 @@ def predict(
     <p> Most Important Features </p>
     {lifestyle_table}
     """
+
+@app.post("/predict_score")
+def predict(
+    age: int = Form(...),
+    gender: str = Form(...),
+    smoking: str = Form(...),
+    activity: int = Form(...),
+    sleep: int = Form(...),
+    height: int = Form(...),
+    weight: int = Form(...),
+    profession: str = Form(...),
+    education: str = Form(...),
+    diet: int = Form(...),
+    diseases: int = Form(...),
+    country: str = Form(...)
+):
+
+    bmi = calculate_bmi(weight, height)
+
+    profession_val = profession_encoder_user(profession)
+    country_val = country_encoder_user(country)
+
+    gender = encode_gender(gender)
+    smoking = encode_smoking_status(smoking)
+    education = encoder_education(education)
+
+    print("Received input:", age, gender, smoking, height, weight)
+
+    processed_data = [
+            age, 
+            gender, 
+            smoking, 
+            activity,
+            sleep,
+            bmi,
+            profession_val,
+            education,
+            diet,
+            diseases,
+            country_val
+    ]
+    prediction, user_df = user_predict(processed_data, model, feature_names)
+    health_df, lifestyle_df = user_feature_importance(user_df, model, feature_names)
+
+    return {
+        "predicted_score": float(prediction[0][0])
+    }
     
