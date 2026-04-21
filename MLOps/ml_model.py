@@ -7,9 +7,14 @@ import numpy as np
 import xgboost as xgb
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 import math
+import random
 
 #place the CSV into mySQL databases, and retrieve the
 #data and save as a JSON format
+
+#random generator
+def generate_id():
+    return random.randint(100000000, 999999999)
 
 #Encoding FUnctions
 def country_encoder(data):
