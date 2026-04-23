@@ -317,7 +317,7 @@ def update_user_health_info(user_health_info: UserHealthUpdate):
 
         ## Step 1 ##
         # Check if user_uuid even exists in user_priv_info DB
-        cursor.execute("SELECT 1 FROM user_priv_info WHERE u_uuid = %s LIMIT 1", (req_user_uuid,))
+        cursor.execute("SELECT 1 FROM user_health_info WHERE user_uuid = %s LIMIT 1", (req_user_uuid,))
 
         result = cursor.fetchall()
 
