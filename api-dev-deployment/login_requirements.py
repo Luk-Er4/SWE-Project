@@ -46,7 +46,7 @@ def pw_requirements(pw: str):
     # Step 2 #
     alphabets = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     numbers = "0123456789"
-    special_characters = "!@#$%^&*()-_=+[]|;:,.<>}{?/"
+    special_characters = "!@#$%^&*()-_=+[]|;:,.<>}{?"
 
     has_alpha = any(c in alphabets for c in pw)
     has_number = any(c in numbers for c in pw)
