@@ -187,6 +187,8 @@ def get_input():
 
 def train_model(db):
 
+  encoder = LabelEncoder()
+
   #the database gets filled only when its empty
   #thats the only time the csv file is read
   if db.execute(text("SELECT 1 FROM healthdata LIMIT 1")).first() == None:
@@ -194,7 +196,6 @@ def train_model(db):
     data = read_data()
     print("Encoding Data")
 
-    encoder = LabelEncoder()
     data = data.drop(['Unnamed: 0','STRESS_LEVEL'], axis=1)
 
     db.execute(
@@ -209,20 +210,21 @@ def train_model(db):
     data.to_dict(orient="records")
     )
     db.commit()
-  else:
-    data = db.execute(text("""SELECT * FROM healthdata"""))
+  
+  result = db.execute(text("SELECT * FROM healthdata"))
+  data = pd.DataFrame(result.fetchall(), columns=result.keys())
 
-  X = data.drop(['HEALTH_RISK_SCORE','LIFESTYLE_SCORE'], axis=1)
-  X['SEX'] = encoder.fit_transform(X['SEX'])
-  X['SMOKING_STATUS'] = encoder.fit_transform(X['SMOKING_STATUS'])
-  profession_encoder(X['PROFESSION'].values)
-  X['EDUCATION_LEVEL'] = encoder.fit_transform(X['EDUCATION_LEVEL'])
-  country_encoder(X['COUNTRY'].values)
+  X = data.drop(['health_score','lifestyle_score'], axis=1)
+  X['gender'] = encoder.fit_transform(X['gender'])
+  X['smoking_status'] = encoder.fit_transform(X['smoking_status'])
+  profession_encoder(X['profession'].values)
+  X['education'] = encoder.fit_transform(X['education'])
+  country_encoder(X['country'].values)
 
-  X['PROFESSION'] = X['PROFESSION'].astype(int)
-  X['COUNTRY'] = X['COUNTRY'].astype(int)
+  X['profession'] = X['profession'].astype(int)
+  X['country'] = X['country'].astype(int)
 
-  y = data[['HEALTH_RISK_SCORE', 'LIFESTYLE_SCORE']]
+  y = data[['health_score', 'lifestyle_score']]
 
   X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
 
