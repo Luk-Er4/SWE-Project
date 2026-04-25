@@ -8,6 +8,7 @@ import xgboost as xgb
 from sklearn.preprocessing import LabelEncoder, OneHotEncoder
 import math
 import random
+from sqlalchemy import create_engine, text
 
 #place the CSV into mySQL databases, and retrieve the
 #data and save as a JSON format
@@ -184,12 +185,34 @@ def get_input():
 
   return [int(age), int(gender), int(smoking), int(activity), int(sleep), int(bmi), int(profession), int(edcuation), int(diet), int(diseases), int(country)]
 
-def train_model():
-  print("Loading Data")
-  data = read_data()
-  print("Encoding Data")
-  encoder = LabelEncoder()
-  X = data.drop(['Unnamed: 0','STRESS_LEVEL', 'HEALTH_RISK_SCORE', 'LIFESTYLE_SCORE'], axis=1)
+def train_model(db):
+
+  #the database gets filled only when its empty
+  #thats the only time the csv file is read
+  if db.execute(text("SELECT 1 FROM healthdata LIMIT 1")).first() == None:
+    print("Loading Data")
+    data = read_data()
+    print("Encoding Data")
+
+    encoder = LabelEncoder()
+    data = data.drop(['Unnamed: 0','STRESS_LEVEL'], axis=1)
+
+    db.execute(
+    text("""
+        INSERT INTO healthdata (age, gender, smoking_status, activity, sleep, bmi, profession,
+         education, diet, diseases, country, health_score, lifestyle_score)
+        VALUES (:TOTAL_AGE, :SEX, :SMOKING_STATUS, :PHYSICAL_ACTIVITY_HOURS_PER_DAY,
+         :SLEEP_HOURS, :BMI, :PROFESSION,
+         :EDUCATION_LEVEL, :DIET_CALORIES,
+         :DISEASES_SUFFERIN_FROM, :COUNTRY, :HEALTH_RISK_SCORE, :LIFESTYLE_SCORE)
+    """),
+    data.to_dict(orient="records")
+    )
+    db.commit()
+  else:
+    data = db.execute(text("""SELECT * FROM healthdata"""))
+
+  X = data.drop(['HEALTH_RISK_SCORE','LIFESTYLE_SCORE'], axis=1)
   X['SEX'] = encoder.fit_transform(X['SEX'])
   X['SMOKING_STATUS'] = encoder.fit_transform(X['SMOKING_STATUS'])
   profession_encoder(X['PROFESSION'].values)

@@ -16,12 +16,6 @@ from pathlib import Path
 model = None
 feature_names = None
 
-print("Loading model at startup...")
-model, feature_names = train_model()
-print("Model loaded successfully")
-
-app = FastAPI()
-
 #connect to the database using the variables in the .env file
 BASE = Path(__file__).resolve().parent
 env_path = BASE / ".env"
@@ -42,6 +36,13 @@ def connect_db():
         yield db
     finally:
         db.close()
+
+print("Loading model at startup...")
+db = SessionLocal()
+model, feature_names = train_model(db)
+print("Model loaded successfully")
+
+app = FastAPI()
 
 @app.get("/", response_class=HTMLResponse)
 def read_root(db: Session = Depends(connect_db)):
@@ -106,55 +107,12 @@ def predict(
     #call the functions needed for specific input
     bmi = calculate_bmi(weight, height)
 
-    #make sure the ID is never the same as another entry
-
-
     profession_val = profession_encoder_user(profession)
     country_val = country_encoder_user(country)
 
     gender = encode_gender(gender)
     smoking = encode_smoking_status(smoking)
     education = encoder_education(education)
-
-    #ID for the database
-    id = generate_id()
-
-    #make sure the ID is not the same
-    while True:
-        try:
-            result = db.execute(
-                text("""
-                    SELECT id FROM healthdata
-                    WHERE id = :id"""),
-                {"id": id}
-            ).fetchone()
-            if result:
-                #duplicate, regenerate ID
-                id = generate_id()
-            else:
-                break
-        except Exception as e:
-            print("failed to select healthdata")
-
-    #insert the data into the database
-    try:
-        db.execute(
-                text("""
-                    INSERT INTO healthdata
-                    VALUES (:id, :age, :gender, :smoking, :activity, :sleep,
-                    :height, :weight, :bmi, :profession, :education, :diet,
-                    :number_of_diseases, :country)
-                """),
-                {"id": id, "age": age, "gender": gender, "smoking": smoking,
-                "activity": activity, "sleep": sleep, "height": height, "weight": weight,
-                "bmi": bmi, "profession": profession, "education": education, "diet": diet,
-                "number_of_diseases": diseases, "country": country}
-            )
-        db.commit()
-        print("successfully inserted data into healthdata")
-    except Exception as e:
-        print("failed to insert into healthdata")
-        db.rollback()
 
     processed_data = [
             age, 
@@ -171,22 +129,6 @@ def predict(
     ]
     prediction, user_df = user_predict(processed_data, model, feature_names)
     health_df, lifestyle_df = user_feature_importance(user_df, model, feature_names)
-
-    #insert the results of the scoring into the database
-    try:
-        db.execute(
-                text("""
-                    INSERT INTO healthresults
-                    VALUES (:id, :health_score, :lifestyle_score)
-                """),
-                {"id": id, "health_score": prediction[0][0], 
-                 "lifestyle_score": prediction[0][1]}
-            )
-        db.commit()
-        print("successfully inserted data into healthresults")
-    except Exception as e:
-        print("failed to insert into healthresults")
-        db.rollback()
 
     health_table = health_df[["Feature", "AbsContribution"]].to_html()
     lifestyle_table = lifestyle_df[["Feature", "AbsContribution"]].to_html()
