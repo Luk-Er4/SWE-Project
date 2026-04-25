@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Form, Depends
-from fastapi.responses import HTMLResponse
+import json
+from fastapi.responses import HTMLResponse, Response
 from contextlib import asynccontextmanager
 from ml_model import calculate_bmi, profession_encoder_user, country_encoder_user
 from ml_model import encoder_education, encode_gender, encode_smoking_status
@@ -86,7 +87,7 @@ def form():
     </form>
     """
 
-@app.post("/predict", response_class=HTMLResponse)
+@app.post("/predict")
 def predict(
     age: int = Form(...),
     gender: str = Form(...),
@@ -130,18 +131,34 @@ def predict(
     prediction, user_df = user_predict(processed_data, model, feature_names)
     health_df, lifestyle_df = user_feature_importance(user_df, model, feature_names)
 
-    health_table = health_df[["Feature", "AbsContribution"]].to_html()
-    lifestyle_table = lifestyle_df[["Feature", "AbsContribution"]].to_html()
+    #health_table = health_df[["Feature", "AbsContribution"]].to_html()
+    #lifestyle_table = lifestyle_df[["Feature", "AbsContribution"]].to_html()
 
     #take the processed data and run it through the model
 
-    return f"""
-    <h2>Results</h2>
-    <p>Health Score = {prediction[0][0]}</p>
-    <p> Most important features </p>
-    {health_table}
-    <p> Lifestyle Score = {prediction[0][1]} </p>
-    <p> Most Important Features </p>
-    {lifestyle_table}
-    """
+    #return f"""
+    #<h2>Results</h2>
+    #<p>Health Score = {prediction[0][0]}</p>
+    #p> Most important features </p>
+    #health_table}
+    #p> Lifestyle Score = {prediction[0][1]} </p>
+    #p> Most Important Features </p>
+    #lifestyle_table}
+    #"""
+
+    results = {
+        "Health_Prediction": {
+            "Health_Score": float(prediction[0][0])
+        },
+        "Health_Feature_Importance": health_df[["Feature", "AbsContribution"]].to_dict(orient="records"),
+        "Lifestyle_Prediction": {
+            "Health_Score": float(prediction[0][0])
+        },
+        "Lifestyle_Feature_Importance": lifestyle_df[["Feature", "AbsContribution"]].to_dict(orient="records")
+    }
+
+    return Response(
+        content=json.dumps(results, indent=4),
+        media_type="application/json"
+    )
     
