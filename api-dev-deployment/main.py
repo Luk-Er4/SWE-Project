@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from contextlib import asynccontextmanager
 
 import login_requirements
+import hashpw
 #import init_db
 
 import mysqlconnector
@@ -110,9 +111,16 @@ def login_result(login_data: LoginRequest):
         req_pw = login_data.pw
 
         # Get u_uuid and first name from user_priv_info DB if id and pw matches
-        cursor.execute("SELECT u_uuid, first_name FROM user_priv_info WHERE user_id = %s AND user_pw = %s", (req_id, req_pw))
+        cursor.execute("SELECT u_uuid, first_name, user_pw FROM user_priv_info WHERE user_id = %s", (req_id,))
         rows = cursor.fetchone()
-        user_uuid, user_first_name = rows[0], rows[1]
+
+        if rows is None:
+            raise HTTPException(status_code=401, detail="Invalid ID or password")
+
+        user_uuid, user_first_name, hashed_pw = rows[0], rows[1], rows[2]
+
+        if not hashpw.verify_password(req_pw, hashed_pw):
+            raise HTTPException(status_code=401, detail="Invalid ID or password")
 
         # Make status message
         login_log = "User Login: " + user_uuid
@@ -123,7 +131,7 @@ def login_result(login_data: LoginRequest):
         # Post login attempt to login_attempts DB
         cursor.execute(
         "INSERT INTO login_attempts (la_uuid, datetime_sent, typed_id, typed_pw, status) " \
-            "VALUES (%s, %s, %s, %s, %s)", (login_attempt_uuid, login_time, req_id, req_pw, login_log))
+            "VALUES (%s, %s, %s, %s, %s)", (login_attempt_uuid, login_time, req_id, None, login_log))
 
         # Save changes in login_attempts DB
         db.commit()
@@ -207,11 +215,12 @@ def create_account_result(create_data: CreateAccountRequest):
 
         ## Step 3 ##
         user_priv_uuid, created_date = str(uuid.uuid4()), datetime.datetime.now()
+        hashed_pw = hashpw.hash_password(req_pw)
 
         # Take name, id, and password, then put it to user_priv_info DB
         cursor.execute("" \
         "INSERT INTO user_priv_info (u_uuid, first_name, last_name, user_id, user_pw, created_at) " \
-            "VALUES (%s, %s, %s, %s, %s, %s)", (user_priv_uuid, req_first, req_last, req_id, req_pw, created_date))
+            "VALUES (%s, %s, %s, %s, %s, %s)", (user_priv_uuid, req_first, req_last, req_id, hashed_pw, created_date))
         
         # Save changes in login_attempts DB
         db.commit()
