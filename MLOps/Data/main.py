@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DATA_PATH = r'.\MLOps\Data\RawData.csv'
+DATA_PATH = r'.\RawData.csv'
 
 METRIC_MAP = {
     "sleep_hours": "SLEEP_HOURS",
