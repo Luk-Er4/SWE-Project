@@ -1,3 +1,4 @@
+# uvicorn main:app --host 127.0.0.1 --port 8001 --reload
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import pandas as pd
@@ -29,7 +30,7 @@ METRIC_MAP = {
     "health_score": "LIFESTYLE_SCORE"
 }
 
-class UserComparisonRequest(BaseModel):
+class UserDashboardRequest(BaseModel):
     user_name: str
     sleep_hours: float
     physical_activity: float
@@ -49,7 +50,7 @@ def comparison_text(metric_name, user_value, percentile):
         return f"Your {metric_name} is higher than {percentile:.0f}% of people."
     return f"Your {metric_name} is lower than {100 - percentile:.0f}% of people."
 
-def build_user_comparison_figure(body: UserComparisonRequest):
+def build_user_comparison_figure(body: UserDashboardRequest):
     df = pd.read_csv(DATA_PATH)
     df = df.rename(columns={"Unnamed: 0": "ID"})
 
@@ -139,7 +140,7 @@ def build_user_comparison_figure(body: UserComparisonRequest):
     return fig, summary
 
 @app.post("/api/user/comparison-chart")
-def get_user_comparison_chart(body: UserComparisonRequest):
+def get_user_comparison_chart(body: UserDashboardRequest):
     fig, summary = build_user_comparison_figure(body)
 
     return {
