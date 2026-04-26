@@ -14,8 +14,8 @@ from pathlib import Path
 from contextlib import asynccontextmanager
 
 BASE = Path(__file__).resolve().parent
-DATA_PATH = BASE / "RawData.csv"
-BASE_DASHBOARD_PATH = BASE / "base_dashboard.html"
+DATA_PATH = BASE / "Data" / "RawData.csv"
+BASE_DASHBOARD_PATH = BASE / "Data" / "base_dashboard.html"
 
 METRIC_MAP = {
     "sleep_hours": "SLEEP_HOURS",
