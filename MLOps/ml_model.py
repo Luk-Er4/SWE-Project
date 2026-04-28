@@ -19,7 +19,7 @@ def generate_id():
 
 #Encoding FUnctions
 def country_encoder(data):
-  
+    data = data.astype(object)
     countries = {
     0: {'United States', 'Canada', 'Mexico'}, #north america
     1: {'United Kingdom', 'Germany', 'Italy', 'Spain', 'Portugal'}, #europe
@@ -55,6 +55,7 @@ def country_encoder_user(item):
 
 
 def profession_encoder(data):
+  data = data.astype(object)
   professions = {
     0: {'Teacher', 'Scholar', 'Professor'},#teaching profession
     1: {'Doctor', 'Nurse', 'Surgeon'},#Health profession
@@ -217,12 +218,12 @@ def train_model(db):
   X = data.drop(['health_score','lifestyle_score'], axis=1)
   X['gender'] = encoder.fit_transform(X['gender'])
   X['smoking_status'] = encoder.fit_transform(X['smoking_status'])
-  profession_encoder(X['profession'].values)
+  X['profession'] = profession_encoder(X['profession'].values).astype(int)
   X['education'] = encoder.fit_transform(X['education'])
-  country_encoder(X['country'].values)
+  X['country'] = country_encoder(X['country'].values).astype(int)
 
-  X['profession'] = X['profession'].astype(int)
-  X['country'] = X['country'].astype(int)
+  #X['profession'] = X['profession'].astype(int)
+  #X['country'] = X['country'].astype(int)
 
   y = data[['health_score', 'lifestyle_score']]
 

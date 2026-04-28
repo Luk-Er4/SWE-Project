@@ -13,3 +13,5 @@ notes.*.txt
 *.tfstate.*
 *.tfvars
 *.tfvars.json
+
+*.env

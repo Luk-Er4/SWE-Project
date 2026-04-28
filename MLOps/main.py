@@ -364,7 +364,7 @@ def predict(
         },
         "Health_Feature_Importance": health_df[["Feature", "AbsContribution"]].to_dict(orient="records"),
         "Lifestyle_Prediction": {
-            "Health_Score": float(prediction[0][0])
+            "Health_Score": float(prediction[0][1])
         },
         "Lifestyle_Feature_Importance": lifestyle_df[["Feature", "AbsContribution"]].to_dict(orient="records")
     }
