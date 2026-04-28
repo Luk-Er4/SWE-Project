@@ -1,0 +1,13 @@
+pandas
+sklearn
+numpy
+xgboost
+math
+os
+contextlib
+python-multipart
+pathlib
+dotenv
+random
+sqlalchemy
+json
