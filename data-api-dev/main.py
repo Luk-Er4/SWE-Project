@@ -11,16 +11,14 @@ from sqlalchemy.orm import sessionmaker, Session
 from dotenv import load_dotenv
 import os
 from pathlib import Path
+import debug_inputs
 
 #data visualization
 from pydantic import BaseModel
 import pandas as pd
-import copy
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from fastapi.middleware.cors import CORSMiddleware
-from pathlib import Path
-from contextlib import asynccontextmanager
+import dashboard_fig
+
 
 #mapping and data visualization class
 BASE = Path(__file__).resolve().parent
@@ -57,68 +55,6 @@ def load_data():
 
     return df[metric_columns].dropna()
 
-def build_base_figure(df):
-
-    fig = make_subplots(
-        rows=len(METRIC_MAP),
-        cols=1,
-        subplot_titles=[
-            key.replace("_", " ").title()
-            for key in METRIC_MAP.keys()
-        ],
-        vertical_spacing=0.08
-    )
-
-    for i, (body_key, csv_col) in enumerate(METRIC_MAP.items(), start=1):
-
-        fig.add_trace(
-            go.Histogram(
-                x=df[csv_col],
-                nbinsx=30,
-                opacity=0.75,
-                name=body_key
-            ),
-            row=i,
-            col=1
-        )
-
-        fig.update_xaxes(
-            title_text=body_key.replace("_", " ").title(),
-            row=i,
-            col=1
-        )
-
-        fig.update_yaxes(
-            title_text="Count",
-            row=i,
-            col=1
-        )
-
-    fig.update_layout(
-        height=350 * len(METRIC_MAP),
-        width=1000,
-        title_text="Health Metrics Compared to Others",
-        showlegend=False,
-        bargap=0.05
-    )
-
-    return fig
-
-
-def percentile_against_others(values, user_value):
-
-    pct = (values.dropna() < user_value).mean() * 100
-    return round(pct, 1)
-
-def comparison_text(metric_name, percentile):
-
-    if percentile == 50:
-        return f"Your {metric_name} is about average."
-
-    if percentile > 50:
-        return f"Your {metric_name} is higher than {percentile:.0f}% of people."
-
-    return f"Your {metric_name} is lower than {100 - percentile:.0f}% of people."
 
 
 @asynccontextmanager
@@ -127,7 +63,7 @@ async def lifespan(app: FastAPI):
     global df_base, base_fig
 
     df_base = load_data()
-    base_fig = build_base_figure(df_base)
+    base_fig = dashboard_fig.build_base_figure(df_base, METRIC_MAP)
 
     base_fig.write_html(
         BASE_DASHBOARD_PATH,
@@ -184,71 +120,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-def build_user_dashboard(body: UserDashboardRequest):
-
-    if df_base is None or base_fig is None:
-        raise HTTPException(
-            status_code=500,
-            detail="Base graph not ready"
-        )
-
-    user_values = {
-        "sleep_hours": body.sleep_hours,
-        "physical_activity": body.physical_activity,
-        "diet_calories": body.diet_calories,
-        "health_risk": body.health_risk,
-        "health_score": body.health_score
-    }
-
-    fig = copy.deepcopy(base_fig)
-
-    fig.update_layout(
-        title_text=f"{body.user_name}'s Health Metrics Compared to Others"
-    )
-
-    summary = []
-
-    for i, (body_key, csv_col) in enumerate(METRIC_MAP.items(), start=1):
-
-        user_value = user_values[body_key]
-        peer_values = df_base[csv_col]
-
-        pct = percentile_against_others(
-            peer_values,
-            user_value
-        )
-
-        summary.append({
-            "metric": body_key,
-            "percentile": pct,
-            "message": comparison_text(
-                body_key.replace("_", " "),
-                pct
-            )
-        })
-
-        fig.add_vline(
-            x=user_value,
-            line_dash="dash",
-            line_width=2,
-            annotation_text=body.user_name,
-            annotation_position="top right",
-            row=i,
-            col=1
-        )
-
-        fig.layout.annotations[i - 1].text = (
-            f"{body_key.replace('_',' ').title()} — "
-            f"higher than {pct:.0f}% of people"
-        )
-
-    return fig, summary
-
 @app.post("/api/user/create_dashboard")
 def create_dashboard(body: UserDashboardRequest):
 
-    fig, summary = build_user_dashboard(body)
+    fig, summary = dashboard_fig.build_user_dashboard(body, METRIC_MAP, df_base, base_fig)
 
     return {
         "user_name": body.user_name,
@@ -262,44 +137,10 @@ def read_root(db: Session = Depends(connect_db)):
     print("ROUTE HIT")
     result = db.execute(text("SELECT 1"))
     print("test query successfully run, connected successfully.", result.scalar())
-    return form()
-def form():
-    return """
-    <h2>Enter Your Info</h2>
-    <form action="/predict" method="post">
-        <input name="age" type="number" placeholder="Age"><br>
-        <input name="gender" placeholder="Gender"><br>
-        <label for='smoking'>smoking Status:</label>
-        <select name="smoking" id="smoking">
-        <option value="Never">Never</option>
-        <option value="Low">Low</option>
-        <option value="Medium">Medium</option>
-        <option value="High">High</option>
-        </select>
-        <br>
-        <input name="activity" type="number" placeholder="Activity"><br>
-        <input name="sleep" type="number" placeholder="Sleep"><br>
-        <input name="height" type="number" placeholder="Height"><br>
-        <input name="weight" type="number" placeholder="Weight"><br>
-        <input name="profession" placeholder="Profession"><br>
-        <label for='education'>Education:</label>
-        <select name="education" id="education">
-        <option value="Highschool">Highschool</option>
-        <option value="some college">some college</option>
-        <option value="Bachlores">Bachlores</option>
-        <option value="Masters">Masters</option>
-        <option value="PHD">PHD</option>
-        </select>
-        <br>
-        <input name="diet" type="number" placeholder="Diet"><br>
-        <input name="diseases" type="number" placeholder="Diseases"><br>
-        <input name="country" placeholder="Country"><br>
+    return debug_inputs.form()
 
-        <button type="submit">Submit</button>
-    </form>
-    """
 
-@app.post("/predict")
+@app.post("/api/predict")
 def predict(
     age: int = Form(...),
     gender: str = Form(...),
