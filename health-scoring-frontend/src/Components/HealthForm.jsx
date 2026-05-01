@@ -1,83 +1,356 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createDashboard, predictHealth, updateUserHealth } from "../lib/api";
 
-export default function HealthForm({ setResult }) {
-  const [form, setForm] = useState({
-    age: "",
-    gender: "",
+const initialForm = {
+  age: "",
+  gender: "",
+  smoking: "Never",
+  activity: "",
+  sleep: "",
+  height: "",
+  weight: "",
+  stressLevel: "",
+  profession: "",
+  education: "",
+  diet: "",
+  diseases: "",
+  country: "",
+};
+
+function normalizeEducationValue(value) {
+  const normalized = value?.trim().toLowerCase();
+
+  if (!normalized) {
+    return "";
+  }
+
+  if (normalized === "highschool" || normalized === "high school") {
+    return "Highschool";
+  }
+
+  if (normalized === "some college") {
+    return "some college";
+  }
+
+  if (
+    normalized === "bachelor's degree" ||
+    normalized === "bachelors" ||
+    normalized === "bachelor"
+  ) {
+    return "Bachlores";
+  }
+
+  if (normalized === "masters" || normalized === "master's degree") {
+    return "Masters";
+  }
+
+  if (normalized === "phd" || normalized === "ph.d" || normalized === "doctorate") {
+    return "PHD";
+  }
+
+  return "";
+}
+
+function calculateBmi(height, weight) {
+  const normalizedHeight = Number(height);
+  const normalizedWeight = Number(weight);
+
+  if (!normalizedHeight || !normalizedWeight) {
+    return 0;
+  }
+
+  return (703 * normalizedWeight) / (normalizedHeight ** 2);
+}
+
+function normalizeSavedHealthData(saved) {
+  if (!saved) {
+    return initialForm;
+  }
+
+  return {
+    age: saved.age?.toString() || "",
+    gender: saved.gender || "",
+    smoking: saved.smoking || "Never",
+    activity: saved.activity?.toString() || "",
+    sleep: saved.sleep?.toString() || "",
     height: "",
     weight: "",
-    exercise: "",
-    sleep: "",
-    water: "",
-    stress: "",
-    smoking: "no",
-    alcohol: "",
-  });
+    stressLevel: saved.stress_level?.toString() || "",
+    profession: saved.profession || "",
+    education: normalizeEducationValue(saved.education),
+    diet: saved.diet?.toString() || "",
+    diseases: saved.diseases?.toString() || "",
+    country: saved.country || "",
+  };
+}
+
+function transformPredictionResult(apiResult) {
+  return {
+    health_risk_score: apiResult.Health_Prediction?.Health_Score,
+    lifestyle_score: apiResult.Lifestyle_Prediction?.Health_Score,
+    top_health_factors: (apiResult.Health_Feature_Importance || []).slice(0, 5),
+    top_lifestyle_factors: (apiResult.Lifestyle_Feature_Importance || []).slice(0, 5),
+  };
+}
+
+export default function HealthForm({
+  user,
+  initialHealthData,
+  setResult,
+  setLoadMessage,
+}) {
+  const [form, setForm] = useState(initialForm);
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+  const hasHydratedProfile = useRef(false);
+  const hasUserEdited = useRef(false);
+
+  useEffect(() => {
+    if (!initialHealthData || hasHydratedProfile.current || hasUserEdited.current) {
+      return;
+    }
+
+    setForm(normalizeSavedHealthData(initialHealthData));
+    hasHydratedProfile.current = true;
+  }, [initialHealthData]);
 
   function handleChange(e) {
     const { name, value } = e.target;
+    hasUserEdited.current = true;
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+    setStatus("loading");
+    setError("");
 
-    const score = 78;
-    const percentile = 72;
+    const bmi = calculateBmi(form.height, form.weight);
+    const payload = {
+      age: Number(form.age),
+      gender: form.gender,
+      smoking: form.smoking,
+      activity: Number(form.activity),
+      sleep: Number(form.sleep),
+      height: Number(form.height),
+      weight: Number(form.weight),
+      profession: form.profession.trim(),
+      education: form.education,
+      diet: Number(form.diet),
+      diseases: Number(form.diseases),
+      country: form.country.trim(),
+    };
 
-    const riskAreas = [];
-    if (Number(form.exercise) < 3) riskAreas.push("Low exercise");
-    if (Number(form.sleep) < 7) riskAreas.push("Low sleep");
-    if (Number(form.water) < 6) riskAreas.push("Low hydration");
-    if (Number(form.stress) > 7) riskAreas.push("High stress");
-    if (form.smoking === "yes") riskAreas.push("Smoking habit");
+    try {
+      const prediction = await predictHealth(payload);
+      const normalizedResult = {
+        ...transformPredictionResult(prediction),
+        bmi,
+      };
 
-    setResult({
-      score,
-      percentile,
-      riskAreas,
-      recommendations: [
-        "Exercise at least 3–5 days per week",
-        "Aim for 7–9 hours of sleep",
-        "Stay hydrated throughout the day",
-      ],
-    });
+      try {
+        const dashboardResponse = await createDashboard({
+          user_name: user?.name || user?.id || "User",
+          sleep_hours: payload.sleep,
+          physical_activity: payload.activity,
+          diet_calories: payload.diet,
+          health_risk: normalizedResult.health_risk_score,
+          health_score: normalizedResult.lifestyle_score,
+        });
+
+        normalizedResult.dashboard_summary = dashboardResponse.summary;
+        normalizedResult.dashboard_figure = dashboardResponse.figure;
+      } catch (dashboardError) {
+        normalizedResult.dashboard_summary =
+          dashboardError.message || "Dashboard summary unavailable.";
+      }
+
+      setResult(normalizedResult);
+
+      if (user?.user_uuid) {
+        try {
+          const updateResponse = await updateUserHealth({
+            user_uuid: user.user_uuid,
+            age: payload.age,
+            gender: payload.gender,
+            smoking: payload.smoking,
+            activity: payload.activity,
+            sleep: payload.sleep,
+            bmi,
+            stress_level: Number(form.stressLevel),
+            profession: payload.profession,
+            education: payload.education,
+            diet: payload.diet,
+            diseases: payload.diseases,
+            country: payload.country,
+          });
+
+          setLoadMessage?.(updateResponse.message || "Updated your saved health profile.");
+        } catch (updateError) {
+          setLoadMessage?.(
+            updateError.message ||
+              "Health score generated, but saving your profile did not complete."
+          );
+        }
+      }
+
+      setStatus("success");
+    } catch (err) {
+      setResult(null);
+      setStatus("error");
+      setError(err.message || "Unable to generate your health score.");
+    }
   }
 
   return (
     <div className="form-card">
       <h2>Health Questionnaire</h2>
-      <p className="muted">Enter your health information to receive your score.</p>
+      <p className="muted">
+        Enter your health information to generate your ML-based score.
+      </p>
 
       <form onSubmit={handleSubmit} className="health-form">
-        <input type="number" name="age" placeholder="Age" value={form.age} onChange={handleChange} />
+        <input
+          type="number"
+          name="age"
+          placeholder="Age"
+          value={form.age}
+          onChange={handleChange}
+          min="1"
+          required
+        />
 
-        <select name="gender" value={form.gender} onChange={handleChange}>
+        <select name="gender" value={form.gender} onChange={handleChange} required>
           <option value="">Select Gender</option>
-          <option value="male">Male</option>
-          <option value="female">Female</option>
-          <option value="other">Other</option>
-          <option value="prefer_not_to_say">Prefer not to say</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
         </select>
-
-        <input type="number" name="height" placeholder="Height (inches)" value={form.height} onChange={handleChange} />
-        <input type="number" name="weight" placeholder="Weight (lbs)" value={form.weight} onChange={handleChange} />
-        <input type="number" name="exercise" placeholder="Exercise days per week" value={form.exercise} onChange={handleChange} />
-        <input type="number" name="sleep" placeholder="Sleep hours" value={form.sleep} onChange={handleChange} />
-        <input type="number" name="water" placeholder="Water cups per day" value={form.water} onChange={handleChange} />
-        <input type="number" name="stress" placeholder="Stress level (1-10)" value={form.stress} onChange={handleChange} />
 
         <select name="smoking" value={form.smoking} onChange={handleChange}>
-          <option value="no">Do you smoke? No</option>
-          <option value="yes">Do you smoke? Yes</option>
+          <option value="Never">Never smoked</option>
+          <option value="Low">Low smoking frequency</option>
+          <option value="Medium">Medium smoking frequency</option>
+          <option value="High">High smoking frequency</option>
         </select>
 
-        <input type="number" name="alcohol" placeholder="Alcoholic drinks per week" value={form.alcohol} onChange={handleChange} />
+        <input
+          type="number"
+          name="activity"
+          placeholder="Activity hours per day"
+          value={form.activity}
+          onChange={handleChange}
+          min="0"
+          required
+        />
 
-        <button type="submit" className="submit-button">
-          Get My Health Score
+        <input
+          type="number"
+          name="sleep"
+          placeholder="Sleep hours per night"
+          value={form.sleep}
+          onChange={handleChange}
+          min="0"
+          required
+        />
+
+        <input
+          type="number"
+          name="height"
+          placeholder="Height (inches)"
+          value={form.height}
+          onChange={handleChange}
+          min="1"
+          required
+        />
+
+        <input
+          type="number"
+          name="weight"
+          placeholder="Weight (lbs)"
+          value={form.weight}
+          onChange={handleChange}
+          min="1"
+          required
+        />
+        <input
+          type="number"
+          name="stressLevel"
+          placeholder="Stress level (1-10)"
+          value={form.stressLevel}
+          onChange={handleChange}
+          min="0"
+          max="10"
+          required
+        />
+
+        <input
+          type="text"
+          name="profession"
+          placeholder="Profession"
+          value={form.profession}
+          onChange={handleChange}
+          required
+        />
+
+        <select
+          name="education"
+          value={form.education}
+          onChange={handleChange}
+          required
+        >
+          <option value="">Education Level</option>
+          <option value="Highschool">Highschool</option>
+          <option value="some college">Some college</option>
+          <option value="Bachlores">Bachelors</option>
+          <option value="Masters">Masters</option>
+          <option value="PHD">PHD</option>
+        </select>
+
+        <input
+          type="number"
+          name="diet"
+          placeholder="Calories per day"
+          value={form.diet}
+          onChange={handleChange}
+          min="0"
+          required
+        />
+
+        <input
+          type="number"
+          name="diseases"
+          placeholder="Current disease count"
+          value={form.diseases}
+          onChange={handleChange}
+          min="0"
+          required
+        />
+
+        <input
+          type="text"
+          name="country"
+          placeholder="Country"
+          value={form.country}
+          onChange={handleChange}
+          required
+        />
+
+        <button type="submit" className="submit-button" disabled={status === "loading"}>
+          {status === "loading" ? "Generating Score..." : "Get My Health Score"}
         </button>
       </form>
+
+      {error ? <p className="auth-message error-text">{error}</p> : null}
+      {initialHealthData ? (
+        <p className="muted helper-text">
+          Saved profile data was loaded, but height and weight are not returned by the
+          backend, so you&apos;ll need to enter them again before generating a score.
+        </p>
+      ) : null}
+      <p className="muted helper-text">
+        The model expects values close to the training data, such as `Female`,
+        `Never`, `Engineer`, `Bachlores`, and `United States`.
+      </p>
     </div>
   );
 }

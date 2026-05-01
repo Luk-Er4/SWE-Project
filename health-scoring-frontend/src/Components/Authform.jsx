@@ -1,40 +1,68 @@
 import { useState } from "react";
+import { createUser, loginUser } from "../lib/api";
 
 export default function AuthForm({ onAuthSuccess }) {
   const [mode, setMode] = useState("signin");
   const [form, setForm] = useState({
-    name: "",
-    email: "",
+    firstName: "",
+    lastName: "",
+    userId: "",
     password: "",
     confirmPassword: "",
   });
   const [message, setMessage] = useState("");
+  const [status, setStatus] = useState("idle");
 
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+    setMessage("");
 
     if (mode === "signup" && form.password !== form.confirmPassword) {
       setMessage("Passwords do not match.");
       return;
     }
 
-    setMessage(
-      mode === "signin"
-        ? "Dummy sign in successful."
-        : "Dummy account created successfully."
-    );
+    setStatus("loading");
 
-    setTimeout(() => {
+    try {
+      const response =
+        mode === "signin"
+          ? await loginUser({
+              id: form.userId.trim(),
+              pw: form.password,
+            })
+          : await createUser({
+              id: form.userId.trim(),
+              pw: form.password,
+              first: form.firstName.trim(),
+              last: form.lastName.trim(),
+            });
+
+      const displayName =
+        mode === "signup"
+          ? `${form.firstName} ${form.lastName}`.trim()
+          : (response.message || "")
+              .replace(/^Welcome!\s*/i, "")
+              .replace(/!+$/, "")
+              .trim() || form.userId.trim();
+
+      setMessage(response.message || "Success.");
+      setStatus("success");
+
       onAuthSuccess({
-        name: form.name || "User",
-        email: form.email,
+        id: form.userId.trim(),
+        name: displayName,
+        user_uuid: response.user_uuid,
       });
-    }, 500);
+    } catch (error) {
+      setStatus("error");
+      setMessage(error.message || "Authentication failed.");
+    }
   }
 
   return (
@@ -42,6 +70,7 @@ export default function AuthForm({ onAuthSuccess }) {
       <div className="auth-tabs">
         <button
           className={mode === "signin" ? "auth-tab active-tab" : "auth-tab"}
+          type="button"
           onClick={() => {
             setMode("signin");
             setMessage("");
@@ -51,6 +80,7 @@ export default function AuthForm({ onAuthSuccess }) {
         </button>
         <button
           className={mode === "signup" ? "auth-tab active-tab" : "auth-tab"}
+          type="button"
           onClick={() => {
             setMode("signup");
             setMessage("");
@@ -62,21 +92,33 @@ export default function AuthForm({ onAuthSuccess }) {
 
       <form onSubmit={handleSubmit} className="auth-form">
         {mode === "signup" && (
-          <input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={form.name}
-            onChange={handleChange}
-          />
+          <>
+            <input
+              type="text"
+              name="firstName"
+              placeholder="First Name"
+              value={form.firstName}
+              onChange={handleChange}
+              required
+            />
+            <input
+              type="text"
+              name="lastName"
+              placeholder="Last Name"
+              value={form.lastName}
+              onChange={handleChange}
+              required
+            />
+          </>
         )}
 
         <input
-          type="email"
-          name="email"
-          placeholder="Email Address"
-          value={form.email}
+          type="text"
+          name="userId"
+          placeholder="User ID"
+          value={form.userId}
           onChange={handleChange}
+          required
         />
 
         <input
@@ -85,6 +127,7 @@ export default function AuthForm({ onAuthSuccess }) {
           placeholder="Password"
           value={form.password}
           onChange={handleChange}
+          required
         />
 
         {mode === "signup" && (
@@ -94,11 +137,16 @@ export default function AuthForm({ onAuthSuccess }) {
             placeholder="Confirm Password"
             value={form.confirmPassword}
             onChange={handleChange}
+            required
           />
         )}
 
-        <button type="submit" className="submit-button">
-          {mode === "signin" ? "Sign In" : "Create Account"}
+        <button type="submit" className="submit-button" disabled={status === "loading"}>
+          {status === "loading"
+            ? "Submitting..."
+            : mode === "signin"
+              ? "Sign In"
+              : "Create Account"}
         </button>
       </form>
 

@@ -1,10 +1,49 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import TopBar from "../Components/TopBar";
 import HealthForm from "../Components/HealthForm";
 import Results from "../Components/Results";
+import { fetchUserHealth } from "../lib/api";
 
 export default function Questionaire({ user, onLogout }) {
   const [result, setResult] = useState(null);
+  const [savedHealthData, setSavedHealthData] = useState(null);
+  const [loadMessage, setLoadMessage] = useState("");
+
+  useEffect(() => {
+    let ignore = false;
+
+    async function loadHealthProfile() {
+      if (!user?.user_uuid) {
+        return;
+      }
+
+      try {
+        const response = await fetchUserHealth(user.user_uuid);
+
+        if (ignore) {
+          return;
+        }
+
+        if (response.health_data?.length) {
+          setSavedHealthData(response.health_data[0]);
+          setLoadMessage("Loaded your saved health profile.");
+        } else {
+          setSavedHealthData(null);
+          setLoadMessage(response.message || "");
+        }
+      } catch (error) {
+        if (!ignore) {
+          setLoadMessage(error.message || "Unable to load saved health profile.");
+        }
+      }
+    }
+
+    loadHealthProfile();
+
+    return () => {
+      ignore = true;
+    };
+  }, [user?.user_uuid]);
 
   return (
     <div className="page">
@@ -26,9 +65,16 @@ export default function Questionaire({ user, onLogout }) {
       </section>
 
       <section className="main-content">
-        <HealthForm setResult={setResult} />
+        <HealthForm
+          user={user}
+          initialHealthData={savedHealthData}
+          setResult={setResult}
+          setLoadMessage={setLoadMessage}
+        />
         <Results result={result} />
       </section>
+
+      {loadMessage ? <p className="muted status-banner">{loadMessage}</p> : null}
 
       <footer className="footer">
         <p>
