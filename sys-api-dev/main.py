@@ -326,16 +326,16 @@ def update_user_health_info(user_health_info: UserHealthUpdate):
 
         ## Step 1 ##
         # Check if user_uuid even exists in user_priv_info DB
-        cursor.execute("SELECT 1 FROM user_health_info WHERE user_uuid = %s LIMIT 1", (req_user_uuid,))
+        cursor.execute("SELECT 1 FROM user_priv_info WHERE u_uuid = %s LIMIT 1", (req_user_uuid,))
 
-        result = cursor.fetchall()
+        result = cursor.fetchone()
 
         if not result:
             return {
                 "message": "Invalid Account..."
             }
 
-        ## Step 2 ##
+        ## Step 2 (Prepare for data) ##
         # Update health data
         req_age = user_health_info.age
         req_gender = user_health_info.gender
@@ -350,35 +350,77 @@ def update_user_health_info(user_health_info: UserHealthUpdate):
         req_diseases = user_health_info.diseases
         req_country = user_health_info.country
 
-        cursor.execute(
-            """
-            UPDATE user_health_info
-            SET age = %s,
-                gender = %s,
-                smoking = %s,
-                activity = %s,
-                sleep = %s,
-                bmi = %s,
-                stress_level = %s,
-                profession = %s,
-                education = %s,
-                diet = %s,
-                diseases = %s,
-                country = %s
-            WHERE user_uuid = %s
-            """, 
-                (req_age, req_gender, req_smoking, req_activity, req_sleep, req_bmi, req_stress_level,
-                 req_profession, req_education, req_diet, req_diseases, req_country, req_user_uuid,)
-            )
+        ## Step 3 (Check if uuid exists in user_health_info) ##
+        # Check if user_uuid even exists in user_health_info DB
+        cursor.execute("SELECT 1 FROM user_health_info WHERE user_uuid = %s LIMIT 1", (req_user_uuid,))
 
-        # Save changes in login_attempts DB
-        db.commit()
+        result = cursor.fetchone()
 
-        ### Return value
-        # This user did not complete the survey so no data to bring
-        return {
-            "message": "Updates Completed!"
-        } 
+        # uuid does not exists! Insert data!
+        if not result:
+            print("Insert!")
+            cursor.execute(
+                """
+                INSERT INTO user_health_info
+                SET user_uuid = %s,
+                    age = %s,
+                    gender = %s,
+                    smoking = %s,
+                    activity = %s,
+                    sleep = %s,
+                    bmi = %s,
+                    stress_level = %s,
+                    profession = %s,
+                    education = %s,
+                    diet = %s,
+                    diseases = %s,
+                    country = %s
+                """, 
+                    (req_user_uuid, req_age, req_gender, req_smoking, req_activity, req_sleep, req_bmi, req_stress_level,
+                    req_profession, req_education, req_diet, req_diseases, req_country,)
+                )
+            
+            # Save changes in login_attempts DB
+            db.commit()
+
+            ### Return value
+            # This user did not complete the survey so no data to bring
+            return {
+                "message": "Insertion Completed!"
+            } 
+        
+        # uuid exists! Update data!
+        else:
+            print("Update!")
+            cursor.execute(
+                """
+                UPDATE user_health_info
+                SET age = %s,
+                    gender = %s,
+                    smoking = %s,
+                    activity = %s,
+                    sleep = %s,
+                    bmi = %s,
+                    stress_level = %s,
+                    profession = %s,
+                    education = %s,
+                    diet = %s,
+                    diseases = %s,
+                    country = %s
+                WHERE user_uuid = %s
+                """, 
+                    (req_age, req_gender, req_smoking, req_activity, req_sleep, req_bmi, req_stress_level,
+                    req_profession, req_education, req_diet, req_diseases, req_country, req_user_uuid,)
+                )
+
+            # Save changes in login_attempts DB
+            db.commit()
+
+            ### Return value
+            # This user did not complete the survey so no data to bring
+            return {
+                "message": "Updates Completed!"
+            } 
         
     # If anything went wrong inside try, then this part will be run
     except Exception as e:
