@@ -25,8 +25,8 @@ The goal of this project is to help general users better understand their overal
 - **Frontend:** HTML, CSS, React  
 - **Backend:** Python, MySQL, Pytest, Fast API
 - **Machine Learning:** XGBoost, Scikit learn, Python, Pandas, Kube Flow
-- **DevOps:** Docker, Gitlab, Kubernets, Terraform
-- **Cloud Ops:** AWS, VPC, Amazon RDS, Amazon S3, Amazon EC2, Amazon API Gateway
+- **DevOps:** Docker, Terraform (IaC), Bash
+- **Cloud Ops:** AWS - VPC, Subnet, ECR, Lambda, Fargate, RDS, CLI
 
 ## Dataset
 The dataset used to train and evaluate the machine learning model was sourced from Kaggle and is provided in CSV format.

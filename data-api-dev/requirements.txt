@@ -1,0 +1,12 @@
+pandas
+scikit-learn
+numpy
+xgboost
+python-multipart
+python-dotenv
+sqlalchemy
+plotly
+uvicorn
+fastapi
+uvicorn[standard]
+pymysql
