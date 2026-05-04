@@ -49,18 +49,32 @@ export default function Questionaire({ user, onLogout }) {
     <div className="page">
       <TopBar user={user} onLogout={onLogout} />
 
-      <section className="info-cards">
-        <div className="info-card">
-          <h3>1. Fill out the form</h3>
-          <p>Users answer health and lifestyle questions in a clean interface.</p>
+      <section className="experience-hero">
+        <div className="hero-copy-card">
+          <p className="hero-badge">Wellness cockpit</p>
+          <h1>Your health score should feel interpretable, not cryptic.</h1>
+          <p className="hero-subtext">
+            Capture the signals that matter, generate a machine-learned score, and
+            turn it into practical next steps you can actually act on.
+          </p>
         </div>
-        <div className="info-card">
-          <h3>2. Generate the score</h3>
-          <p>Let the magic happen.</p>
-        </div>
-        <div className="info-card">
-          <h3>3. View results</h3>
-          <p>Users get their score, risk areas, and personalized feedback.</p>
+
+        <div className="info-cards">
+          <div className="info-card">
+            <span className="step-chip">01</span>
+            <h3>Map your baseline</h3>
+            <p>Demographics, body metrics, and recovery data build the model context.</p>
+          </div>
+          <div className="info-card">
+            <span className="step-chip">02</span>
+            <h3>Score the routine</h3>
+            <p>Daily habits become health and lifestyle scores plus comparative signals.</p>
+          </div>
+          <div className="info-card">
+            <span className="step-chip">03</span>
+            <h3>Turn insight into action</h3>
+            <p>See recommendations, key drivers, and a dashboard designed for follow-through.</p>
+          </div>
         </div>
       </section>
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createDashboard, predictHealth, updateUserHealth } from "../lib/api";
+import FormSection from "./FormSection";
 
 const initialForm = {
   age: "",
@@ -204,136 +205,159 @@ export default function HealthForm({
 
   return (
     <div className="form-card">
-      <h2>Health Questionnaire</h2>
-      <p className="muted">
-        Enter your health information to generate your ML-based score.
-      </p>
+      <div className="panel-heading">
+        <p className="panel-kicker">Questionnaire</p>
+        <h2>Build your health snapshot</h2>
+        <p className="muted">
+          Move through the sections below to generate a richer, ML-backed read on
+          your current routine.
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit} className="health-form">
-        <input
-          type="number"
-          name="age"
-          placeholder="Age"
-          value={form.age}
-          onChange={handleChange}
-          min="1"
-          required
-        />
-
-        <select name="gender" value={form.gender} onChange={handleChange} required>
-          <option value="">Select Gender</option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-        </select>
-
-        <select name="smoking" value={form.smoking} onChange={handleChange}>
-          <option value="Never">Never smoked</option>
-          <option value="Low">Low smoking frequency</option>
-          <option value="Medium">Medium smoking frequency</option>
-          <option value="High">High smoking frequency</option>
-        </select>
-
-        <input
-          type="number"
-          name="activity"
-          placeholder="Activity hours per day"
-          value={form.activity}
-          onChange={handleChange}
-          min="0"
-          required
-        />
-
-        <input
-          type="number"
-          name="sleep"
-          placeholder="Sleep hours per night"
-          value={form.sleep}
-          onChange={handleChange}
-          min="0"
-          required
-        />
-
-        <input
-          type="number"
-          name="height"
-          placeholder="Height (inches)"
-          value={form.height}
-          onChange={handleChange}
-          min="1"
-          required
-        />
-
-        <input
-          type="number"
-          name="weight"
-          placeholder="Weight (lbs)"
-          value={form.weight}
-          onChange={handleChange}
-          min="1"
-          required
-        />
-        <input
-          type="number"
-          name="stressLevel"
-          placeholder="Stress level (1-10)"
-          value={form.stressLevel}
-          onChange={handleChange}
-          min="0"
-          max="10"
-          required
-        />
-
-        <input
-          type="text"
-          name="profession"
-          placeholder="Profession"
-          value={form.profession}
-          onChange={handleChange}
-          required
-        />
-
-        <select
-          name="education"
-          value={form.education}
-          onChange={handleChange}
-          required
+        <FormSection
+          eyebrow="Section 01"
+          title="Identity and profile"
+          description="Start with the core demographic details the model uses to anchor your comparison group."
         >
-          <option value="">Education Level</option>
-          <option value="Highschool">Highschool</option>
-          <option value="some college">Some college</option>
-          <option value="Bachlores">Bachelors</option>
-          <option value="Masters">Masters</option>
-          <option value="PHD">PHD</option>
-        </select>
+          <input
+            type="number"
+            name="age"
+            placeholder="Age"
+            value={form.age}
+            onChange={handleChange}
+            min="1"
+            required
+          />
 
-        <input
-          type="number"
-          name="diet"
-          placeholder="Calories per day"
-          value={form.diet}
-          onChange={handleChange}
-          min="0"
-          required
-        />
+          <select name="gender" value={form.gender} onChange={handleChange} required>
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
 
-        <input
-          type="number"
-          name="diseases"
-          placeholder="Current disease count"
-          value={form.diseases}
-          onChange={handleChange}
-          min="0"
-          required
-        />
+          <input
+            type="text"
+            name="profession"
+            placeholder="Profession"
+            value={form.profession}
+            onChange={handleChange}
+            required
+          />
 
-        <input
-          type="text"
-          name="country"
-          placeholder="Country"
-          value={form.country}
-          onChange={handleChange}
-          required
-        />
+          <select
+            name="education"
+            value={form.education}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Education Level</option>
+            <option value="Highschool">Highschool</option>
+            <option value="some college">Some college</option>
+            <option value="Bachlores">Bachelors</option>
+            <option value="Masters">Masters</option>
+            <option value="PHD">PHD</option>
+          </select>
+
+          <input
+            type="text"
+            name="country"
+            placeholder="Country"
+            value={form.country}
+            onChange={handleChange}
+            required
+          />
+        </FormSection>
+
+        <FormSection
+          eyebrow="Section 02"
+          title="Body and recovery"
+          description="These metrics shape how the model interprets your current condition and recovery quality."
+        >
+          <input
+            type="number"
+            name="height"
+            placeholder="Height (inches)"
+            value={form.height}
+            onChange={handleChange}
+            min="1"
+            required
+          />
+
+          <input
+            type="number"
+            name="weight"
+            placeholder="Weight (lbs)"
+            value={form.weight}
+            onChange={handleChange}
+            min="1"
+            required
+          />
+
+          <input
+            type="number"
+            name="sleep"
+            placeholder="Sleep hours per night"
+            value={form.sleep}
+            onChange={handleChange}
+            min="0"
+            required
+          />
+
+          <input
+            type="number"
+            name="stressLevel"
+            placeholder="Stress level (1-10)"
+            value={form.stressLevel}
+            onChange={handleChange}
+            min="0"
+            max="10"
+            required
+          />
+
+          <input
+            type="number"
+            name="diseases"
+            placeholder="Current disease count"
+            value={form.diseases}
+            onChange={handleChange}
+            min="0"
+            required
+          />
+        </FormSection>
+
+        <FormSection
+          eyebrow="Section 03"
+          title="Lifestyle signals"
+          description="Daily habits and behavior patterns are what drive most of the recommendations you’ll see."
+        >
+          <select name="smoking" value={form.smoking} onChange={handleChange}>
+            <option value="Never">Never smoked</option>
+            <option value="Low">Low smoking frequency</option>
+            <option value="Medium">Medium smoking frequency</option>
+            <option value="High">High smoking frequency</option>
+          </select>
+
+          <input
+            type="number"
+            name="activity"
+            placeholder="Activity hours per day"
+            value={form.activity}
+            onChange={handleChange}
+            min="0"
+            required
+          />
+
+          <input
+            type="number"
+            name="diet"
+            placeholder="Calories per day"
+            value={form.diet}
+            onChange={handleChange}
+            min="0"
+            required
+          />
+        </FormSection>
 
         <button type="submit" className="submit-button" disabled={status === "loading"}>
           {status === "loading" ? "Generating Score..." : "Get My Health Score"}
