@@ -29,6 +29,7 @@ export default function PlotlyFigure({ figure }) {
 
   useEffect(() => {
     let ignore = false;
+    let resizeObserver = null;
 
     async function renderFigure() {
       if (!figure || !containerRef.current) {
@@ -36,6 +37,7 @@ export default function PlotlyFigure({ figure }) {
       }
 
       try {
+        setError("");
         const Plotly = await loadPlotly();
 
         if (ignore || !containerRef.current) {
@@ -47,9 +49,14 @@ export default function PlotlyFigure({ figure }) {
           figure.data || [],
           {
             autosize: true,
+            height: figure.layout?.height || 380,
             paper_bgcolor: "rgba(0,0,0,0)",
-            plot_bgcolor: "rgba(255,255,255,0.95)",
-            margin: { t: 48, r: 24, b: 56, l: 56 },
+            plot_bgcolor: "rgba(12, 18, 28, 0.55)",
+            font: {
+              color: "#d7e1eb",
+              family: "Segoe UI Variable, Aptos, sans-serif",
+            },
+            margin: { t: 48, r: 28, b: 56, l: 56 },
             ...figure.layout,
           },
           {
@@ -58,6 +65,14 @@ export default function PlotlyFigure({ figure }) {
             ...figure.config,
           }
         );
+
+        resizeObserver = new ResizeObserver(() => {
+          if (window.Plotly && containerRef.current) {
+            window.Plotly.Plots.resize(containerRef.current);
+          }
+        });
+
+        resizeObserver.observe(containerRef.current);
       } catch (plotError) {
         if (!ignore) {
           setError(plotError.message || "Unable to render dashboard figure.");
@@ -69,6 +84,10 @@ export default function PlotlyFigure({ figure }) {
 
     return () => {
       ignore = true;
+
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
 
       if (window.Plotly && containerRef.current) {
         window.Plotly.purge(containerRef.current);

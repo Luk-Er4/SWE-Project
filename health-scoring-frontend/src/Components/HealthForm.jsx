@@ -99,6 +99,7 @@ export default function HealthForm({
   initialHealthData,
   setResult,
   setLoadMessage,
+  resetToken,
 }) {
   const [form, setForm] = useState(initialForm);
   const [status, setStatus] = useState("idle");
@@ -114,6 +115,16 @@ export default function HealthForm({
     setForm(normalizeSavedHealthData(initialHealthData));
     hasHydratedProfile.current = true;
   }, [initialHealthData]);
+
+  useEffect(() => {
+    hasUserEdited.current = false;
+    hasHydratedProfile.current = Boolean(initialHealthData);
+    setForm(
+      initialHealthData ? normalizeSavedHealthData(initialHealthData) : initialForm
+    );
+    setError("");
+    setStatus("idle");
+  }, [resetToken]);
 
   function handleChange(e) {
     const { name, value } = e.target;

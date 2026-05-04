@@ -1,4 +1,7 @@
-import PlotlyFigure from "./PlotlyFigure";
+import ResultsDashboard from "./ResultsDashboard";
+import ResultsDrivers from "./ResultsDrivers";
+import ResultsOverview from "./ResultsOverview";
+import ResultsRecommendations from "./ResultsRecommendations";
 
 function formatScore(value) {
   return typeof value === "number" && Number.isFinite(value)
@@ -12,32 +15,65 @@ function formatContribution(value) {
     : "--";
 }
 
-function formatSummary(value) {
-  if (typeof value === "string") {
-    return value;
+function summarizeObject(value) {
+  if (!value || typeof value !== "object") {
+    return "";
+  }
+
+  const preferredKeys = ["summary", "message", "label", "title", "insight"];
+  const preferred = preferredKeys
+    .map((key) => value[key])
+    .filter((item) => typeof item === "string" && item.trim());
+
+  if (preferred.length) {
+    return preferred.join(" ");
+  }
+
+  const entries = Object.entries(value)
+    .filter(([, item]) => item !== null && item !== undefined && item !== "")
+    .slice(0, 4)
+    .map(([key, item]) => {
+      if (typeof item === "object") {
+        return `${key}: ${JSON.stringify(item)}`;
+      }
+
+      return `${key}: ${item}`;
+    });
+
+  return entries.join(" | ");
+}
+
+function normalizeSummaryItems(value) {
+  if (typeof value === "string" && value.trim()) {
+    return [value.trim()];
   }
 
   if (typeof value === "number" && Number.isFinite(value)) {
-    return value.toString();
+    return [value.toString()];
   }
 
   if (Array.isArray(value)) {
-    return value.join(", ");
+    return value
+      .map((item) => {
+        if (typeof item === "string") {
+          return item.trim();
+        }
+
+        if (typeof item === "number" && Number.isFinite(item)) {
+          return item.toString();
+        }
+
+        return summarizeObject(item);
+      })
+      .filter(Boolean);
   }
 
   if (value && typeof value === "object") {
-    if (typeof value.summary === "string") {
-      return value.summary;
-    }
-
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return "Dashboard summary unavailable.";
-    }
+    const summary = summarizeObject(value);
+    return summary ? [summary] : [];
   }
 
-  return "Dashboard summary not available yet.";
+  return [];
 }
 
 function getScoreBand(score) {
@@ -45,7 +81,7 @@ function getScoreBand(score) {
     return {
       label: "Not enough data",
       tone: "neutral",
-      message: "We need a valid score before we can meaningfully position your result.",
+      message: "We need a valid score before we can position this result with confidence.",
     };
   }
 
@@ -53,7 +89,7 @@ function getScoreBand(score) {
     return {
       label: "High attention",
       tone: "alert",
-      message: "The model sees several signals worth improving soon rather than later.",
+      message: "This lands in the lowest quarter of the scale, which suggests a weaker baseline and more immediate room to improve.",
     };
   }
 
@@ -61,7 +97,7 @@ function getScoreBand(score) {
     return {
       label: "Needs work",
       tone: "caution",
-      message: "You have a workable baseline, but there are still a few visible pressure points.",
+      message: "This sits below the midpoint of the scale, so the model sees a few meaningful pressure points worth addressing next.",
     };
   }
 
@@ -69,14 +105,14 @@ function getScoreBand(score) {
     return {
       label: "Promising",
       tone: "good",
-      message: "You are in a healthier range overall, with room to fine-tune key habits.",
+      message: "This is above average on the 0 to 100 scale and points to a fairly solid routine with some opportunities to sharpen it.",
     };
   }
 
   return {
     label: "Strong footing",
     tone: "great",
-    message: "Your inputs suggest a relatively strong routine compared with the wider baseline.",
+    message: "This is in the upper end of the scale and suggests lower modeled risk with stronger day-to-day health signals overall.",
   };
 }
 
@@ -104,7 +140,7 @@ function buildRecommendations(result) {
 
   if (leadingFactors.some((factor) => factor.includes("sleep"))) {
     recommendations.push(
-      "Protect a reliable sleep window for the next two weeks and aim for a bedtime routine that cuts stimulation 30 to 60 minutes before bed."
+      "Protect a reliable sleep window for the next two weeks and aim for a bedtime routine that reduces stimulation 30 to 60 minutes before bed."
     );
   }
 
@@ -128,7 +164,7 @@ function buildRecommendations(result) {
 
   if (leadingFactors.some((factor) => factor.includes("age"))) {
     recommendations.push(
-      "Age is influencing the model, which you cannot change, so focus your energy on the controllable lifestyle variables driving the rest of the score."
+      "Age is influencing the model, which you cannot change, so focus your effort on the controllable sleep, activity, and nutrition patterns around it."
     );
   }
 
@@ -141,107 +177,71 @@ function buildRecommendations(result) {
   return recommendations.slice(0, 4);
 }
 
-function renderFactors(items) {
+function normalizeFactors(items) {
   if (!items?.length) {
-    return <p className="muted">No feature contributions returned.</p>;
+    return [];
   }
 
-  return (
-    <ul className="factor-list">
-      {items.map((item) => (
-        <li key={`${item.Feature}-${item.AbsContribution ?? item.contribution}`}>
-          <span>{item.Feature}</span>
-          <strong>{formatContribution(item.AbsContribution ?? item.contribution)}</strong>
-        </li>
-      ))}
-    </ul>
-  );
+  return items.map((item) => ({
+    feature: item.Feature,
+    contribution: formatContribution(item.AbsContribution ?? item.contribution),
+  }));
 }
 
-export default function ResultsPanel({ result }) {
-  const healthBand = result ? getScoreBand(result.health_risk_score) : null;
-  const lifestyleBand = result ? getScoreBand(result.lifestyle_score) : null;
-  const recommendations = result ? buildRecommendations(result) : [];
+export default function ResultsPanel({ result, onEdit, onReset }) {
+  if (!result) {
+    return null;
+  }
+
+  const healthBand = getScoreBand(result.health_risk_score);
+  const lifestyleBand = getScoreBand(result.lifestyle_score);
+  const recommendations = buildRecommendations(result);
+  const summaryItems = normalizeSummaryItems(result.dashboard_summary);
 
   return (
-    <div className="results-card">
-      <div className="panel-heading">
-        <p className="panel-kicker">Results</p>
-        <h2>Context, not just a number</h2>
-        <p className="muted">
-          We translate the raw model output into a practical read on what matters most
-          right now.
-        </p>
-      </div>
-
-      {!result ? (
-        <div className="results-empty">
-          <p className="results-empty-title">Your score story will appear here.</p>
-          <p className="muted">
-            Submit the questionnaire to unlock score context, key driver analysis, and
-            recommendations.
+    <section className="results-experience">
+      <div className="results-hero-card stage-fade">
+        <div>
+          <p className="panel-kicker">Results</p>
+          <h1>Your health snapshot, with context built in.</h1>
+          <p className="muted results-hero-copy">
+            Both scores are shown on a 0 to 100 scale. Higher values are better in
+            this model and generally indicate lower modeled risk with healthier
+            routine signals.
           </p>
         </div>
-      ) : (
-        <>
-          <div className="score-grid">
-            <div className={`score-box score-box-${healthBand?.tone || "neutral"}`}>
-              <h3>{formatScore(result.health_risk_score)}</h3>
-              <p>Health Risk Score</p>
-              <span className="score-pill">{healthBand?.label}</span>
-            </div>
 
-            <div className={`score-box secondary-score score-box-${lifestyleBand?.tone || "neutral"}`}>
-              <h3>{formatScore(result.lifestyle_score)}</h3>
-              <p>Lifestyle Score</p>
-              <span className="score-pill">{lifestyleBand?.label}</span>
-            </div>
-          </div>
+        <div className="results-actions">
+          <button type="button" className="back-link" onClick={onEdit}>
+            Edit Answers
+          </button>
+          <button type="button" className="hero-button" onClick={onReset}>
+            Start Fresh
+          </button>
+        </div>
+      </div>
 
-          <div className="insight-banner">
-            <div>
-              <p className="insight-label">Health read</p>
-              <h4>{healthBand?.message}</h4>
-            </div>
-            <div>
-              <p className="insight-label">Lifestyle read</p>
-              <h4>{lifestyleBand?.message}</h4>
-            </div>
-          </div>
+      <div className="results-grid stage-fade">
+        <ResultsOverview
+          healthScore={formatScore(result.health_risk_score)}
+          lifestyleScore={formatScore(result.lifestyle_score)}
+          bmi={formatScore(result.bmi)}
+          healthBand={healthBand}
+          lifestyleBand={lifestyleBand}
+        />
 
-          <div className="result-section">
-            <h4>BMI</h4>
-            <p>{formatScore(result.bmi)}</p>
-          </div>
+        <ResultsDrivers
+          healthFactors={normalizeFactors(result.top_health_factors)}
+          lifestyleFactors={normalizeFactors(result.top_lifestyle_factors)}
+        />
 
-          <div className="result-section">
-            <h4>Top Health Factors</h4>
-            {renderFactors(result.top_health_factors)}
-          </div>
+        <ResultsDashboard
+          summaryItems={summaryItems}
+          figure={result.dashboard_figure}
+        />
 
-          <div className="result-section">
-            <h4>Top Lifestyle Factors</h4>
-            {renderFactors(result.top_lifestyle_factors)}
-          </div>
-
-          <div className="result-section">
-            <h4>Dashboard Summary</h4>
-            <p>{formatSummary(result.dashboard_summary)}</p>
-            {result.dashboard_figure ? (
-              <PlotlyFigure figure={result.dashboard_figure} />
-            ) : null}
-          </div>
-
-          <div className="result-section">
-            <h4>Recommended next moves</h4>
-            <ul className="recommendation-list">
-              {recommendations.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-        </>
-      )}
-    </div>
+        <ResultsRecommendations recommendations={recommendations} />
+      </div>
+    </section>
   );
 }
