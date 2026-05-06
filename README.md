@@ -12,21 +12,26 @@ The goal of this project is to help general users better understand their overal
 3. The model generates a health score and comparison metrics  
 4. The system provides feedback and resources based on risk areas  
 
-## Project Timeline
+## System Design 
 
-- **Week 01:** Start Production on UI and ML model, Design database schema  
-- **Week 04:** Start database production, optimize ML model  
-- **Week 07:** Finalize ML model, integrate with UI, database checkpoint 
-- **Week 10:** Finish database production  
-- **Week 13:** Finalize UI, add any additional features
-- **Week 14:** Final presentation 
+### Local Deployment 
+<img width="1894" height="1127" alt="image" src="https://github.com/user-attachments/assets/2a1ac604-b38c-4f6e-b3d9-37b23de1035b" />
+
+### Prouction
+<img width="2053" height="1167" alt="image" src="https://github.com/user-attachments/assets/b7d6d19d-7bed-45ff-85dd-726c0ac87d9e" />
+
+### DevOps & Automation -
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/23beb1a6-0660-4daf-a5a4-a0420b7f5fee" width="500"/>
+  <img src="https://github.com/user-attachments/assets/97f1317e-cf43-40bd-ada1-db256229c638" width="500"/>
+</p>
 
 ## Tech Stack
-- **Frontend:** HTML, CSS, React  
-- **Backend:** Python, MySQL, Pytest, Fast API
-- **Machine Learning:** XGBoost, Scikit learn, Python, Pandas, Kube Flow
+- **Frontend:** HTML, CSS, JavaScript, Node.js, React  
+- **Backend:** Python, MySQL, Fast API
+- **Machine Learning:** XGBoost, Python, Pandas, Plotly
 - **DevOps:** Docker, Terraform (IaC), Bash
-- **Cloud Ops:** AWS - VPC, Subnet, ECR, Lambda, Fargate, RDS, CLI
+- **Cloud Ops:** AWS - VPC, ECR, EC2, RDS, ALB(Application Load Balancer), Route 53, Amplify
 
 ## Dataset
 The dataset used to train and evaluate the machine learning model was sourced from Kaggle and is provided in CSV format.
@@ -48,12 +53,16 @@ The application is planned to be deployed in the cloud once core functionality i
 
 This is a **team project** developed by a group of **five members**:
 
-- [Tatum Beaugh](https://github.com/tatumbeaugh)  
+### Backend, DevOps & Cloud Engineering
+- [Euijin Jung](https://github.com/Luk-Er4)
+
+### Frontend Developer
 - [Amiran Fields](https://github.com/a-mir-an)  
 - [Kanharatana Huot](https://github.com/Alfieeeeeeeeeeee)
-- [Euijin Jung](https://github.com/Luk-Er4)
-- [Peyton Bubert](https://github.com/pbubert)
 
+### Data/ML Engineering
+- [Peyton Bubert](https://github.com/pbubert)
+- [Tatum Beaugh](https://github.com/tatumbeaugh)  
 
 ## Disclaimer
 This application is for educational purposes only and is not intended to provide medical advice or replace professional healthcare guidance.
