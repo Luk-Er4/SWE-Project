@@ -84,11 +84,11 @@ feature_names = None
 BASE = Path(__file__).resolve().parent
 env_path = BASE / ".env"
 load_dotenv(dotenv_path=env_path)
-USER = os.getenv("LOCAL_HOST_USERNAME")
-PASSWORD = os.getenv("LOCAL_DB_PASSWORD")
-HOST = os.getenv("LOCAL_HOST_NAME")
-DATABASE = os.getenv("LOCAL_DB_DATABASE")
-PORT = os.getenv("LOCAL_DB_PORT")
+USER = os.getenv("AWS_DB_USER")
+PASSWORD = os.getenv("AWS_DB_PW")
+HOST = os.getenv("AWS_DB_HOST")
+DATABASE = os.getenv("AWS_DB_NAME")
+PORT = os.getenv("AWS_RDS_DB_PORT")
 
 DATABASE_URL = f"mysql+pymysql://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}"
 engine = create_engine(DATABASE_URL)
@@ -117,6 +117,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/health")
+def health():
+    return {
+        "message": "healthy!"        
+    }
+
 @app.post("/api/user/create_dashboard")
 def create_dashboard(body: UserDashboardRequest):
 
@@ -127,15 +133,6 @@ def create_dashboard(body: UserDashboardRequest):
         "summary": summary,
         "figure": json.loads(fig.to_json())
     }
-
-#form for prediction
-@app.get("/", response_class=HTMLResponse)
-def read_root(db: Session = Depends(connect_db)):
-    print("ROUTE HIT")
-    result = db.execute(text("SELECT 1"))
-    print("test query successfully run, connected successfully.", result.scalar())
-    return debug_inputs.form()
-
 
 @app.post("/api/predict")
 def predict(

@@ -8,6 +8,8 @@ AWS_DB_HOST="${db_host}"
 AWS_DB_NAME="${db_name}"
 AWS_DB_USER="${db_user}"
 AWS_DB_PW="${db_password}"
+PORT="${ec2_port_num}"
+CONTAINER_NAME="${ec2_container_name}"
 
 dnf update -y || yum update -y
 dnf install -y docker awscli || yum install -y docker awscli
@@ -20,13 +22,13 @@ aws ecr get-login-password --region "$AWS_REGION" \
 
 docker pull "$ECR_IMAGE_URI"
 
-docker stop health-api || true
-docker rm health-api || true
+docker stop "$CONTAINER_NAME" || true
+docker rm "$CONTAINER_NAME" || true
 
 docker run -d \
-  --name health-api \
+  --name "$CONTAINER_NAME" \
   --restart unless-stopped \
-  -p 8000:8000 \
+  -p "$PORT":"$PORT" \
   -e AWS_DB_HOST="$AWS_DB_HOST" \
   -e AWS_DB_NAME="$AWS_DB_NAME" \
   -e AWS_DB_USER="$AWS_DB_USER" \
